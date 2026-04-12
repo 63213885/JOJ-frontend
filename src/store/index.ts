@@ -1,8 +1,8 @@
 import { createStore } from "vuex";
-import { User } from "../../generated/models/User";
+import { LoginUserVO } from "../../generated/models/LoginUserVO";
 
 interface State {
-  user: User | null;
+  user: LoginUserVO | null;
   isLoggedIn: boolean;
 }
 
@@ -16,7 +16,7 @@ export default createStore<State>({
     isLoggedIn: (state) => state.isLoggedIn,
   },
   mutations: {
-    setUser(state, user: User) {
+    setUser(state, user: LoginUserVO) {
       state.user = user;
       state.isLoggedIn = true;
     },

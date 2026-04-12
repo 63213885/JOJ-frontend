@@ -12,7 +12,10 @@
         <router-link to="/problems">题库</router-link>
       </nav>
 
-      <div class="auth-buttons" v-if="!isLoggedIn">
+      <div class="auth-placeholder" v-if="isInitializing">
+        <!-- 占位符，防止页面加载时产生闪烁 -->
+      </div>
+      <div class="auth-buttons" v-else-if="!isLoggedIn">
         <router-link to="/user/login" class="btn btn-login">登录</router-link>
         <router-link to="/user/register" class="btn btn-register"
           >注册
@@ -153,7 +156,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed } from "vue";
+import { defineComponent, ref, computed, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { AuthControllerService } from "../../generated/services/AuthControllerService";
@@ -184,11 +187,32 @@ export default defineComponent({
     const store = useStore();
     const router = useRouter();
     const dropdownOpen = ref(false);
+    const isInitializing = ref(true); // 添加一个初始化状态
     const defaultAvatar =
       "https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png"; // Element Plus 默认头像
 
     const isLoggedIn = computed(() => store.getters.isLoggedIn);
     const currentUser = computed(() => store.getters.currentUser);
+
+    // 页面加载时自动获取一次当前用户，保持登录态
+    const fetchCurrentUser = async () => {
+      // 只有当前未登录时才请求
+      if (!isLoggedIn.value) {
+        try {
+          const res = await AuthControllerService.getLoginUserUsingGet();
+          if (res.code === 0 && res.data) {
+            store.commit("setUser", res.data);
+          }
+        } catch (err) {
+          // no action needed. user is naturally not logged in.
+        }
+      }
+      isInitializing.value = false; // 无论请求成功还是失败，此时均已初始化完毕
+    };
+
+    onMounted(() => {
+      fetchCurrentUser();
+    });
 
     const toggleDropdown = () => {
       dropdownOpen.value = !dropdownOpen.value;
@@ -214,6 +238,7 @@ export default defineComponent({
       isLoggedIn,
       currentUser,
       dropdownOpen,
+      isInitializing,
       defaultAvatar,
       toggleDropdown,
       closeDropdown,
@@ -291,6 +316,10 @@ export default defineComponent({
   height: 2px;
   background-color: #3b82f6;
   border-radius: 2px;
+}
+
+.auth-placeholder {
+  width: 130px; /* 大致预留出按钮或头像占位的宽度以防布局抖动 */
 }
 
 .auth-buttons {
