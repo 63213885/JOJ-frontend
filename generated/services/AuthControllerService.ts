@@ -4,6 +4,7 @@
 /* eslint-disable */
 import type { LoginRequest } from '../models/LoginRequest';
 import type { RegisterRequest } from '../models/RegisterRequest';
+import type { Result_boolean_ } from '../models/Result_boolean_';
 import type { Result_long_ } from '../models/Result_long_';
 import type { Result_SendCodeResponse_ } from '../models/Result_SendCodeResponse_';
 import type { Result_string_ } from '../models/Result_string_';
@@ -27,6 +28,23 @@ export class AuthControllerService {
             method: 'POST',
             url: '/api/user/login',
             body: loginRequest,
+            errors: {
+                401: `Unauthorized`,
+                403: `Forbidden`,
+                404: `Not Found`,
+            },
+        });
+    }
+    /**
+     * logout
+     * @returns Result_boolean_ OK
+     * @returns any Created
+     * @throws ApiError
+     */
+    public static logoutUsingPost(): CancelablePromise<Result_boolean_ | any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/user/logout',
             errors: {
                 401: `Unauthorized`,
                 403: `Forbidden`,

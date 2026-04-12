@@ -9,6 +9,7 @@ export type { OpenAPIConfig } from './core/OpenAPI';
 
 export { LoginRequest } from './models/LoginRequest';
 export { RegisterRequest } from './models/RegisterRequest';
+export type { Result_boolean_ } from './models/Result_boolean_';
 export type { Result_long_ } from './models/Result_long_';
 export type { Result_SendCodeResponse_ } from './models/Result_SendCodeResponse_';
 export type { Result_string_ } from './models/Result_string_';

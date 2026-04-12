@@ -156,6 +156,7 @@
 import { defineComponent, ref, computed } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
+import { AuthControllerService } from "../../generated/services/AuthControllerService";
 
 // 简单的 click-outside 指令，用于点击外部关闭下拉菜单
 const clickOutside = {
@@ -197,10 +198,16 @@ export default defineComponent({
       dropdownOpen.value = false;
     };
 
-    const handleLogout = () => {
-      store.commit("clearUser");
-      closeDropdown();
-      router.push("/user/login");
+    const handleLogout = async () => {
+      try {
+        await AuthControllerService.logoutUsingPost();
+      } catch (err) {
+        console.error("登出失败", err);
+      } finally {
+        store.commit("clearUser");
+        closeDropdown();
+        router.push("/user/login");
+      }
     };
 
     return {
