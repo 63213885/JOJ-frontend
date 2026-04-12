@@ -2,15 +2,38 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { LoginRequest } from '../models/LoginRequest';
 import type { RegisterRequest } from '../models/RegisterRequest';
 import type { Result_long_ } from '../models/Result_long_';
 import type { Result_SendCodeResponse_ } from '../models/Result_SendCodeResponse_';
 import type { Result_string_ } from '../models/Result_string_';
+import type { Result_User_ } from '../models/Result_User_';
 import type { SendCodeRequest } from '../models/SendCodeRequest';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class AuthControllerService {
+    /**
+     * login
+     * @param loginRequest loginRequest
+     * @returns Result_User_ OK
+     * @returns any Created
+     * @throws ApiError
+     */
+    public static loginUsingPost(
+        loginRequest: LoginRequest,
+    ): CancelablePromise<Result_User_ | any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/user/login',
+            body: loginRequest,
+            errors: {
+                401: `Unauthorized`,
+                403: `Forbidden`,
+                404: `Not Found`,
+            },
+        });
+    }
     /**
      * ok
      * @returns Result_string_ OK
