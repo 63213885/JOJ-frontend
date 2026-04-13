@@ -1,88 +1,101 @@
 <template>
-  <div class="login-wrapper">
-    <div class="login-container">
-      <div class="login-card glass-card">
-        <h2 class="title">
-          Welcome Back to <span class="gradient-text">JOJ</span>
-        </h2>
+  <div class="reset-wrapper">
+    <div class="reset-container">
+      <div class="reset-card glass-card">
+        <h2 class="title">重置 <span class="gradient-text">密码</span></h2>
 
         <div class="tabs">
           <button
-            :class="['tab-btn', { active: loginType === 'account' }]"
-            @click="loginType = 'account'"
+            :class="['tab-btn', { active: resetType === 'phone' }]"
+            @click="resetType = 'phone'"
           >
-            密码登录
+            手机号验证
           </button>
           <button
-            :class="['tab-btn', { active: loginType === 'code' }]"
-            @click="loginType = 'code'"
+            :class="['tab-btn', { active: resetType === 'email' }]"
+            @click="resetType = 'email'"
           >
-            验证码登录
+            邮箱验证
           </button>
         </div>
 
-        <form @submit.prevent="handleLogin" class="login-form">
-          <!-- Account Password Login -->
-          <template v-if="loginType === 'account'">
-            <div class="form-group">
-              <input
-                type="text"
-                v-model="form.account"
-                placeholder="请输入账号"
-                required
-                class="cyber-input"
-                autocomplete="username"
-              />
-            </div>
+        <form @submit.prevent="handleReset" class="reset-form">
+          <div class="form-group">
+            <input
+              type="text"
+              v-model="form.account"
+              placeholder="请输入账号"
+              required
+              class="cyber-input"
+              autocomplete="off"
+            />
+          </div>
 
-            <div class="form-group">
-              <input
-                type="password"
-                v-model="form.password"
-                placeholder="请输入密码"
-                required
-                class="cyber-input"
-                autocomplete="current-password"
-              />
-            </div>
-          </template>
+          <div class="form-group">
+            <input
+              v-if="resetType === 'phone'"
+              type="tel"
+              v-model="form.identifier"
+              placeholder="请输入手机号"
+              required
+              class="cyber-input"
+              autocomplete="off"
+            />
+            <input
+              v-else
+              type="email"
+              v-model="form.identifier"
+              placeholder="请输入邮箱"
+              required
+              class="cyber-input"
+              autocomplete="off"
+            />
+          </div>
 
-          <!-- Email/Phone Verification Code Login -->
-          <template v-else>
-            <div class="form-group">
-              <input
-                type="text"
-                v-model="form.identifier"
-                placeholder="请输入手机号或邮箱"
-                required
-                class="cyber-input"
-                autocomplete="username"
-              />
-            </div>
+          <div class="form-group code-group">
+            <input
+              type="text"
+              v-model="form.code"
+              placeholder="动态验证码"
+              required
+              class="cyber-input code-input"
+              autocomplete="off"
+            />
+            <button
+              type="button"
+              class="send-code-btn"
+              @click="sendCode"
+              :disabled="counting"
+            >
+              {{ counting ? `${countDown}s 后重发` : "获取验证码" }}
+            </button>
+          </div>
 
-            <div class="form-group code-group">
-              <input
-                type="text"
-                v-model="form.code"
-                placeholder="请输入验证码"
-                required
-                class="cyber-input code-input"
-                autocomplete="off"
-              />
-              <button
-                type="button"
-                class="send-code-btn"
-                @click="sendCode"
-                :disabled="counting"
-              >
-                {{ counting ? `${countDown}s 后重发` : "获取验证码" }}
-              </button>
-            </div>
-          </template>
+          <div class="form-group">
+            <input
+              type="password"
+              v-model="form.newPassword"
+              placeholder="请输入新密码"
+              required
+              class="cyber-input"
+              autocomplete="new-password"
+            />
+          </div>
+
+          <div class="form-group">
+            <input
+              type="password"
+              v-model="form.confirmPassword"
+              placeholder="请再次确认新密码"
+              required
+              class="cyber-input"
+              autocomplete="new-password"
+            />
+          </div>
 
           <button type="submit" class="submit-btn" :disabled="loading">
             <span class="btn-text">{{
-              loading ? "登录中..." : "立即登录"
+              loading ? "重置中..." : "确认重置"
             }}</span>
             <div class="btn-glow"></div>
           </button>
@@ -97,8 +110,8 @@
         </div>
 
         <div class="links">
-          <span class="has-account" @click="goToRegister"
-            >还没账号？<span class="register-link">立即注册</span></span
+          <span class="has-account" @click="goToLogin"
+            >想起来了？<span class="login-link">返回登录</span></span
           >
         </div>
       </div>
@@ -112,20 +125,19 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, reactive, computed } from "vue";
+import { defineComponent, ref, reactive } from "vue";
 import { useRouter } from "vue-router";
-import { useStore } from "vuex";
-import { AuthControllerService } from "../../../generated/services/AuthControllerService";
-import { SendCodeRequest, LoginRequest } from "../../../generated";
-import scene = SendCodeRequest.scene;
+import {
+  AuthControllerService,
+  SendCodeRequest,
+  PasswordResetRequest,
+} from "../../../../generated";
 
 export default defineComponent({
-  name: "LoginView",
+  name: "ResetPasswordView",
   setup() {
     const router = useRouter();
-    const store = useStore();
-
-    const loginType = ref("account"); // 'account' or 'code'
+    const resetType = ref("phone"); // 'phone' or 'email'
     const loading = ref(false);
     const counting = ref(false);
     const countDown = ref(60);
@@ -150,14 +162,10 @@ export default defineComponent({
 
     const form = reactive({
       account: "",
-      password: "",
       identifier: "",
       code: "",
-    });
-
-    const isEmail = computed(() => {
-      // 简单判断是否包含@来区分邮箱和手机号
-      return form.identifier.includes("@");
+      newPassword: "",
+      confirmPassword: "",
     });
 
     const sendCode = async () => {
@@ -171,10 +179,11 @@ export default defineComponent({
 
         const res = await AuthControllerService.sendCodeUsingPost({
           identifier: form.identifier,
-          identifierType: isEmail.value
-            ? SendCodeRequest.identifierType.EMAIL
-            : SendCodeRequest.identifierType.PHONE,
-          scene: scene.LOGIN,
+          identifierType:
+            resetType.value === "email"
+              ? SendCodeRequest.identifierType.EMAIL
+              : SendCodeRequest.identifierType.PHONE,
+          scene: SendCodeRequest.scene.RESET_PASSWORD,
         });
 
         if (res.code !== 0) {
@@ -201,72 +210,69 @@ export default defineComponent({
       }
     };
 
-    const handleLogin = async () => {
+    const handleReset = async () => {
+      if (form.newPassword !== form.confirmPassword) {
+        showNotification("两次密码输入不一致");
+        return;
+      }
+
       try {
         loading.value = true;
 
-        let loginRequest: LoginRequest = {};
+        const resetRequest: PasswordResetRequest = {
+          account: form.account,
+          code: form.code,
+          identifier: form.identifier,
+          identifierType:
+            resetType.value === "email"
+              ? PasswordResetRequest.identifierType.EMAIL
+              : PasswordResetRequest.identifierType.PHONE,
+          newPassword: form.newPassword,
+          confirmPassword: form.confirmPassword,
+        };
 
-        if (loginType.value === "account") {
-          loginRequest = {
-            account: form.account,
-            password: form.password,
-          };
-        } else {
-          loginRequest = {
-            identifier: form.identifier,
-            code: form.code,
-            identifierType: isEmail.value
-              ? LoginRequest.identifierType.EMAIL
-              : LoginRequest.identifierType.PHONE,
-          };
-        }
-
-        const res = await AuthControllerService.loginUsingPost(loginRequest);
+        const res = await AuthControllerService.resetPasswordUsingPost(
+          resetRequest
+        );
 
         if (res.code !== 0) {
-          throw new Error(res.msg || "登录失败");
+          throw new Error(res.msg || "重置失败");
         }
 
-        // 保存用户信息到 Vuex
-        if (res.data) {
-          store.commit("setUser", res.data);
-        }
-
-        showNotification("登录成功！", "success");
+        showNotification("密码重置成功，请重新登录！", "success");
         setTimeout(() => {
-          router.push("/");
-        }, 1000);
+          router.push("/auth/login");
+        }, 2000);
       } catch (err: any) {
         // eslint-disable-line @typescript-eslint/no-explicit-any
         console.error(err);
-        showNotification(err.body?.message || err.message || "登录失败");
+        showNotification(err.body?.message || err.message || "重置失败");
       } finally {
         loading.value = false;
       }
     };
 
-    const goToRegister = () => {
-      router.push("/user/register");
+    const goToLogin = () => {
+      router.push("/auth/login");
     };
 
     return {
-      loginType,
+      resetType,
       form,
       loading,
       counting,
       countDown,
       notification,
       sendCode,
-      handleLogin,
-      goToRegister,
+      handleReset,
+      goToLogin,
     };
   },
 });
 </script>
 
 <style scoped>
-.login-wrapper {
+.reset-wrapper {
   position: relative;
   min-height: calc(100vh - 64px);
   display: flex;
@@ -317,7 +323,7 @@ export default defineComponent({
   background: linear-gradient(to top right, #8b5cf6, #3b82f6);
 }
 
-.login-container {
+.reset-container {
   position: relative;
   z-index: 10;
   width: 100%;
@@ -372,10 +378,11 @@ export default defineComponent({
 .gradient-text {
   background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-.login-form {
+.reset-form {
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -546,14 +553,14 @@ export default defineComponent({
   color: #94a3b8;
 }
 
-.register-link {
+.login-link {
   color: #3b82f6;
   font-weight: 600;
   cursor: pointer;
   transition: color 0.2s ease;
 }
 
-.register-link:hover {
+.login-link:hover {
   color: #60a5fa;
   text-decoration: underline;
 }

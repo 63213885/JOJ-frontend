@@ -82,7 +82,7 @@ export default defineComponent({
     ]);
 
     const goToRegister = () => {
-      router.push("/user/register");
+      router.push("/auth/register");
     };
 
     const handleOk = async () => {

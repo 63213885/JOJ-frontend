@@ -9,6 +9,7 @@ export type { OpenAPIConfig } from './core/OpenAPI';
 
 export { LoginRequest } from './models/LoginRequest';
 export type { LoginUserVO } from './models/LoginUserVO';
+export { PasswordResetRequest } from './models/PasswordResetRequest';
 export { RegisterRequest } from './models/RegisterRequest';
 export type { Result_boolean_ } from './models/Result_boolean_';
 export type { Result_LoginUserVO_ } from './models/Result_LoginUserVO_';

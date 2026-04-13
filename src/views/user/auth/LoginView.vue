@@ -1,101 +1,88 @@
 <template>
-  <div class="register-wrapper">
-    <div class="register-container">
-      <div class="register-card glass-card">
-        <h2 class="title">Join <span class="gradient-text">JOJ</span></h2>
+  <div class="login-wrapper">
+    <div class="login-container">
+      <div class="login-card glass-card">
+        <h2 class="title">
+          Welcome Back to <span class="gradient-text">JOJ</span>
+        </h2>
 
         <div class="tabs">
           <button
-            :class="['tab-btn', { active: registerType === 'phone' }]"
-            @click="registerType = 'phone'"
+            :class="['tab-btn', { active: loginType === 'account' }]"
+            @click="loginType = 'account'"
           >
-            手机注册
+            密码登录
           </button>
           <button
-            :class="['tab-btn', { active: registerType === 'email' }]"
-            @click="registerType = 'email'"
+            :class="['tab-btn', { active: loginType === 'code' }]"
+            @click="loginType = 'code'"
           >
-            邮箱注册
+            验证码登录
           </button>
         </div>
 
-        <form @submit.prevent="handleRegister" class="register-form">
-          <div class="form-group">
-            <input
-              type="text"
-              v-model="form.account"
-              placeholder="请输入账号"
-              required
-              class="cyber-input"
-              autocomplete="off"
-            />
-          </div>
+        <form @submit.prevent="handleLogin" class="login-form">
+          <!-- Account Password Login -->
+          <template v-if="loginType === 'account'">
+            <div class="form-group">
+              <input
+                type="text"
+                v-model="form.account"
+                placeholder="请输入账号"
+                required
+                class="cyber-input"
+                autocomplete="username"
+              />
+            </div>
 
-          <div class="form-group">
-            <input
-              type="password"
-              v-model="form.password"
-              placeholder="请输入密码"
-              required
-              class="cyber-input"
-              autocomplete="new-password"
-            />
-          </div>
+            <div class="form-group">
+              <input
+                type="password"
+                v-model="form.password"
+                placeholder="请输入密码"
+                required
+                class="cyber-input"
+                autocomplete="current-password"
+              />
+            </div>
+          </template>
 
-          <div class="form-group">
-            <input
-              type="password"
-              v-model="form.confirmPassword"
-              placeholder="请确认密码"
-              required
-              class="cyber-input"
-              autocomplete="new-password"
-            />
-          </div>
+          <!-- Email/Phone Verification Code Login -->
+          <template v-else>
+            <div class="form-group">
+              <input
+                type="text"
+                v-model="form.identifier"
+                placeholder="请输入手机号或邮箱"
+                required
+                class="cyber-input"
+                autocomplete="username"
+              />
+            </div>
 
-          <div class="form-group">
-            <input
-              v-if="registerType === 'phone'"
-              type="tel"
-              v-model="form.phone"
-              placeholder="请输入手机号"
-              required
-              class="cyber-input"
-              autocomplete="off"
-            />
-            <input
-              v-else
-              type="email"
-              v-model="form.email"
-              placeholder="请输入邮箱"
-              required
-              class="cyber-input"
-              autocomplete="off"
-            />
-          </div>
-
-          <div class="form-group code-group">
-            <input
-              type="text"
-              v-model="form.code"
-              placeholder="验证码"
-              required
-              class="cyber-input code-input"
-              autocomplete="off"
-            />
-            <button
-              type="button"
-              class="send-code-btn"
-              @click="sendCode"
-              :disabled="counting"
-            >
-              {{ counting ? `${countDown}s 后重发` : "获取验证码" }}
-            </button>
-          </div>
+            <div class="form-group code-group">
+              <input
+                type="text"
+                v-model="form.code"
+                placeholder="请输入验证码"
+                required
+                class="cyber-input code-input"
+                autocomplete="off"
+              />
+              <button
+                type="button"
+                class="send-code-btn"
+                @click="sendCode"
+                :disabled="counting"
+              >
+                {{ counting ? `${countDown}s 后重发` : "获取验证码" }}
+              </button>
+            </div>
+          </template>
 
           <button type="submit" class="submit-btn" :disabled="loading">
             <span class="btn-text">{{
-              loading ? "注册中..." : "立即注册"
+              loading ? "登录中..." : "立即登录"
             }}</span>
             <div class="btn-glow"></div>
           </button>
@@ -110,8 +97,15 @@
         </div>
 
         <div class="links">
-          <span class="has-account" @click="goToLogin"
-            >已有账号？<span class="login-link">立即登录</span></span
+          <span class="has-account"
+            >还没账号？<span class="register-link" @click="goToRegister"
+              >立即注册</span
+            ></span
+          >
+          <span class="has-account"
+            >忘记密码？<span class="forgot-link" @click="goToReset"
+              >立即重置</span
+            ></span
           >
         </div>
       </div>
@@ -125,17 +119,20 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, reactive } from "vue";
+import { defineComponent, ref, reactive, computed } from "vue";
 import { useRouter } from "vue-router";
-import { AuthControllerService } from "../../../generated/services/AuthControllerService";
-import { SendCodeRequest } from "../../../generated";
+import { useStore } from "vuex";
+import { AuthControllerService } from "../../../../generated/services/AuthControllerService";
+import { SendCodeRequest, LoginRequest } from "../../../../generated";
 import scene = SendCodeRequest.scene;
 
 export default defineComponent({
-  name: "RegisterView",
+  name: "LoginView",
   setup() {
     const router = useRouter();
-    const registerType = ref("phone");
+    const store = useStore();
+
+    const loginType = ref("account"); // 'account' or 'code'
     const loading = ref(false);
     const counting = ref(false);
     const countDown = ref(60);
@@ -161,20 +158,30 @@ export default defineComponent({
     const form = reactive({
       account: "",
       password: "",
-      confirmPassword: "",
-      phone: "",
-      email: "",
+      identifier: "",
       code: "",
     });
 
+    const isEmail = computed(() => {
+      // 简单判断是否包含@来区分邮箱和手机号
+      return form.identifier.includes("@");
+    });
+
     const sendCode = async () => {
+      if (!form.identifier) {
+        showNotification("请输入手机号或邮箱");
+        return;
+      }
+
       try {
         counting.value = true;
-        // 先发送请求获取倒计时时间，而不是先开启定时器
+
         const res = await AuthControllerService.sendCodeUsingPost({
-          identifier: registerType.value === "phone" ? form.phone : form.email,
-          identifierType: registerType.value as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-          scene: scene.REGISTER,
+          identifier: form.identifier,
+          identifierType: isEmail.value
+            ? SendCodeRequest.identifierType.EMAIL
+            : SendCodeRequest.identifierType.PHONE,
+          scene: scene.LOGIN,
         });
 
         if (res.code !== 0) {
@@ -182,9 +189,6 @@ export default defineComponent({
         }
 
         showNotification("验证码已发送", "success");
-
-        // 成功后再根据后端返回的有效期设置倒计时
-        // res.data.expireSeconds 如果没有就默认用 60
         countDown.value = res.data?.expireSeconds || 60;
 
         let timer = setInterval(() => {
@@ -192,7 +196,7 @@ export default defineComponent({
           if (countDown.value <= 0) {
             clearInterval(timer);
             counting.value = false;
-            countDown.value = 60; // 倒计时结束重置为默认值
+            countDown.value = 60;
           }
         }, 1000);
       } catch (err: any) {
@@ -204,59 +208,79 @@ export default defineComponent({
       }
     };
 
-    const handleRegister = async () => {
+    const handleLogin = async () => {
       try {
         loading.value = true;
-        const res = await AuthControllerService.registerUsingPost({
-          account: form.account,
-          password: form.password,
-          checkPassword: form.confirmPassword,
-          identifierType: registerType.value as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-          identifier: registerType.value === "phone" ? form.phone : form.email,
-          code: form.code,
-          agreeTerms: true, // Add agree terms if needed by backend, assuming true for now
-        });
 
-        if (res.code !== 0) {
-          throw new Error(res.msg || "注册失败");
+        let loginRequest: LoginRequest = {};
+
+        if (loginType.value === "account") {
+          loginRequest = {
+            account: form.account,
+            password: form.password,
+          };
+        } else {
+          loginRequest = {
+            identifier: form.identifier,
+            code: form.code,
+            identifierType: isEmail.value
+              ? LoginRequest.identifierType.EMAIL
+              : LoginRequest.identifierType.PHONE,
+          };
         }
 
-        showNotification("注册成功！", "success");
+        const res = await AuthControllerService.loginUsingPost(loginRequest);
+
+        if (res.code !== 0) {
+          throw new Error(res.msg || "登录失败");
+        }
+
+        // 保存用户信息到 Vuex
+        if (res.data) {
+          store.commit("setUser", res.data);
+        }
+
+        showNotification("登录成功！", "success");
         setTimeout(() => {
-          router.push("/user/login");
+          router.push("/");
         }, 1000);
       } catch (err: any) {
         // eslint-disable-line @typescript-eslint/no-explicit-any
         console.error(err);
-        showNotification(err.body?.message || err.message || "注册失败");
+        showNotification(err.body?.message || err.message || "登录失败");
       } finally {
         loading.value = false;
       }
     };
 
-    const goToLogin = () => {
-      router.push("/user/login");
+    const goToRegister = () => {
+      router.push("/auth/register");
+    };
+
+    const goToReset = () => {
+      router.push("/auth/reset");
     };
 
     return {
-      registerType,
+      loginType,
       form,
       loading,
       counting,
       countDown,
       notification,
       sendCode,
-      handleRegister,
-      goToLogin,
+      handleLogin,
+      goToRegister,
+      goToReset,
     };
   },
 });
 </script>
 
 <style scoped>
-.register-wrapper {
+.login-wrapper {
   position: relative;
-  min-height: calc(100vh - 64px); /* Adjust based on navbar height */
+  min-height: calc(100vh - 64px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -305,7 +329,7 @@ export default defineComponent({
   background: linear-gradient(to top right, #8b5cf6, #3b82f6);
 }
 
-.register-container {
+.login-container {
   position: relative;
   z-index: 10;
   width: 100%;
@@ -328,12 +352,6 @@ export default defineComponent({
   color: #f8fafc;
   margin-bottom: 32px;
   letter-spacing: -0.5px;
-}
-
-.gradient-text {
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 
 .tabs {
@@ -363,7 +381,14 @@ export default defineComponent({
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.register-form {
+.gradient-text {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.login-form {
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -526,7 +551,9 @@ export default defineComponent({
 
 .links {
   margin-top: 32px;
-  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .has-account {
@@ -534,14 +561,26 @@ export default defineComponent({
   color: #94a3b8;
 }
 
-.login-link {
+.forgot-link {
   color: #3b82f6;
   font-weight: 600;
   cursor: pointer;
   transition: color 0.2s ease;
 }
 
-.login-link:hover {
+.forgot-link:hover {
+  color: #60a5fa;
+  text-decoration: underline;
+}
+
+.register-link {
+  color: #3b82f6;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.register-link:hover {
   color: #60a5fa;
   text-decoration: underline;
 }

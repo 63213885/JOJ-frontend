@@ -8,14 +8,19 @@ const routes: Array<RouteRecordRaw> = [
     component: HomeView,
   },
   {
-    path: "/user/register",
+    path: "/auth/register",
     name: "register",
-    component: () => import("../views/user/RegisterView.vue"),
+    component: () => import("../views/user/auth/RegisterView.vue"),
   },
   {
-    path: "/user/login",
+    path: "/auth/login",
     name: "login",
-    component: () => import("../views/user/LoginView.vue"),
+    component: () => import("../views/user/auth/LoginView.vue"),
+  },
+  {
+    path: "/auth/reset",
+    name: "reset",
+    component: () => import("../views/user/auth/ResetPasswordView.vue"),
   },
 ];
 

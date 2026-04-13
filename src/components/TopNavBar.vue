@@ -16,8 +16,8 @@
         <!-- 占位符，防止页面加载时产生闪烁 -->
       </div>
       <div class="auth-buttons" v-else-if="!isLoggedIn">
-        <router-link to="/user/login" class="btn btn-login">登录</router-link>
-        <router-link to="/user/register" class="btn btn-register"
+        <router-link to="/auth/login" class="btn btn-login">登录</router-link>
+        <router-link to="/auth/register" class="btn btn-register"
           >注册
         </router-link>
       </div>
@@ -230,7 +230,7 @@ export default defineComponent({
       } finally {
         store.commit("clearUser");
         closeDropdown();
-        router.push("/user/login");
+        router.push("/auth/login");
       }
     };
 

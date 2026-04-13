@@ -3,6 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { LoginRequest } from '../models/LoginRequest';
+import type { PasswordResetRequest } from '../models/PasswordResetRequest';
 import type { RegisterRequest } from '../models/RegisterRequest';
 import type { Result_boolean_ } from '../models/Result_boolean_';
 import type { Result_LoginUserVO_ } from '../models/Result_LoginUserVO_';
@@ -26,7 +27,7 @@ export class AuthControllerService {
     ): CancelablePromise<Result_LoginUserVO_ | any> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/user/login',
+            url: '/api/auth/login',
             body: loginRequest,
             errors: {
                 401: `Unauthorized`,
@@ -44,7 +45,7 @@ export class AuthControllerService {
     public static logoutUsingPost(): CancelablePromise<Result_boolean_ | any> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/user/logout',
+            url: '/api/auth/logout',
             errors: {
                 401: `Unauthorized`,
                 403: `Forbidden`,
@@ -60,7 +61,7 @@ export class AuthControllerService {
     public static getLoginUserUsingGet(): CancelablePromise<Result_LoginUserVO_> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/user/me',
+            url: '/api/auth/me',
             errors: {
                 401: `Unauthorized`,
                 403: `Forbidden`,
@@ -76,7 +77,28 @@ export class AuthControllerService {
     public static okUsingGet(): CancelablePromise<Result_string_> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/user/ok',
+            url: '/api/auth/ok',
+            errors: {
+                401: `Unauthorized`,
+                403: `Forbidden`,
+                404: `Not Found`,
+            },
+        });
+    }
+    /**
+     * resetPassword
+     * @param passwordResetRequest passwordResetRequest
+     * @returns Result_boolean_ OK
+     * @returns any Created
+     * @throws ApiError
+     */
+    public static resetPasswordUsingPost(
+        passwordResetRequest: PasswordResetRequest,
+    ): CancelablePromise<Result_boolean_ | any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/auth/password/reset',
+            body: passwordResetRequest,
             errors: {
                 401: `Unauthorized`,
                 403: `Forbidden`,
@@ -96,7 +118,7 @@ export class AuthControllerService {
     ): CancelablePromise<Result_long_ | any> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/user/register',
+            url: '/api/auth/register',
             body: registerRequest,
             errors: {
                 401: `Unauthorized`,
@@ -117,7 +139,7 @@ export class AuthControllerService {
     ): CancelablePromise<Result_SendCodeResponse_ | any> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/user/send-code',
+            url: '/api/auth/send-code',
             body: request,
             errors: {
                 401: `Unauthorized`,
