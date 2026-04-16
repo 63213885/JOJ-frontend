@@ -85,7 +85,10 @@
                 </div>
               </div>
               <div class="dropdown-divider"></div>
-              <router-link to="/user/profile" class="dropdown-item">
+              <router-link
+                :to="`/profile/${currentUser?.account || ''}`"
+                class="dropdown-item"
+              >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="16"

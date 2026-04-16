@@ -22,6 +22,11 @@ const routes: Array<RouteRecordRaw> = [
     name: "reset",
     component: () => import("../views/user/auth/ResetPasswordView.vue"),
   },
+  {
+    path: "/profile/:account",
+    name: "userProfile",
+    component: () => import("../views/user/profile/ProfileView.vue"),
+  },
 ];
 
 const router = createRouter({

@@ -16,7 +16,14 @@ export type { Result_LoginUserVO_ } from './models/Result_LoginUserVO_';
 export type { Result_long_ } from './models/Result_long_';
 export type { Result_SendCodeResponse_ } from './models/Result_SendCodeResponse_';
 export type { Result_string_ } from './models/Result_string_';
+export type { Result_UserDetailVO_ } from './models/Result_UserDetailVO_';
+export type { Result_UserVO_ } from './models/Result_UserVO_';
+export type { Result_Void_ } from './models/Result_Void_';
 export { SendCodeRequest } from './models/SendCodeRequest';
 export { SendCodeResponse } from './models/SendCodeResponse';
+export type { UpdateProfileDTO } from './models/UpdateProfileDTO';
+export type { UserDetailVO } from './models/UserDetailVO';
+export type { UserVO } from './models/UserVO';
 
 export { AuthControllerService } from './services/AuthControllerService';
+export { ProfileControllerService } from './services/ProfileControllerService';
