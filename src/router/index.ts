@@ -23,9 +23,38 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import("../views/user/auth/ResetPasswordView.vue"),
   },
   {
-    path: "/profile/:account",
-    name: "userProfile",
+    path: "/user-layout",
     component: () => import("../views/user/profile/ProfileView.vue"),
+    children: [
+      {
+        path: "/profile/settings",
+        name: "profileSettings",
+        component: () =>
+          import("../views/user/profile/ProfileSettingsView.vue"),
+      },
+      {
+        path: "/profile/:account",
+        name: "userProfile",
+        component: () => import("../views/user/profile/ProfileHomeView.vue"),
+      },
+      {
+        path: "/courses/:account",
+        name: "userCourses",
+        component: () => import("../views/user/profile/ProfileCoursesView.vue"),
+      },
+      {
+        path: "/submissions/:account",
+        name: "userSubmissions",
+        component: () =>
+          import("../views/user/profile/ProfileSubmissionsView.vue"),
+      },
+      {
+        path: "/contests/with/:account",
+        name: "userContests",
+        component: () =>
+          import("../views/user/profile/ProfileContestsView.vue"),
+      },
+    ],
   },
 ];
 

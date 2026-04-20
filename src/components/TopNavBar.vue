@@ -105,10 +105,6 @@
                 </svg>
                 个人主页
               </router-link>
-              <router-link to="/user/settings" class="dropdown-item">
-                <span class="icon-placeholder">⚙️</span>
-                个人中心
-              </router-link>
               <router-link to="/user/orders" class="dropdown-item">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

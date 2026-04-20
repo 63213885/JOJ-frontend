@@ -3,28 +3,35 @@
     <div v-if="loading" class="loading">加载中...</div>
     <div v-else-if="error" class="error">{{ error }}</div>
     <div v-else-if="user" class="profile-content">
-      <!-- Upper Section: Banner & Header -->
       <div class="profile-header-section">
-        <div class="profile-banner"></div>
         <div class="profile-header-info">
           <div class="header-left">
-            <div class="avatar-wrapper">
+            <div
+              class="avatar-wrapper"
+              @click="isOwner ? triggerAvatarUpload() : null"
+              :class="{ clickable: isOwner }"
+              title="点击修改头像"
+            >
               <img
                 :src="user.avatarUrl || defaultAvatar"
                 alt="Avatar"
                 class="avatar"
               />
+              <input
+                type="file"
+                ref="fileInput"
+                @change="onAvatarChange"
+                accept="image/*"
+                style="display: none"
+              />
+              <div v-if="isOwner" class="avatar-overlay">更换头像</div>
             </div>
+
             <div class="user-main-info">
               <div class="name-edit-wrapper">
                 <h2 :class="getRankColor(user.rating || 1500)" class="username">
                   {{ user.account }}
                 </h2>
-                <div class="header-edit-row desktop-btn">
-                  <button type="button" class="header-edit-btn">
-                    编辑资料
-                  </button>
-                </div>
               </div>
               <div class="info-row user-bio" v-if="user.bio">
                 <svg
@@ -87,38 +94,18 @@
                 </svg>
                 <span>{{ user.school }}</span>
               </div>
-              <div class="info-row user-location" v-if="user.lastLoginIp">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path
-                    d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"
-                  ></path>
-                  <circle cx="12" cy="10" r="3"></circle>
-                </svg>
-                <span>{{ user.lastLoginIp }}</span>
-              </div>
-              <div class="info-row user-status">
-                <span class="status-dot offline"></span>
-                <span class="status-text">离线</span>
-                <div class="custom-tooltip">
-                  上次登录: {{ formatDate(user.lastLoginTime) }}
-                </div>
-              </div>
             </div>
           </div>
 
           <div class="header-right">
-            <div class="header-edit-row mobile-btn">
-              <button type="button" class="header-edit-btn">编辑资料</button>
+            <div class="header-edit-row desktop-btn" v-if="isOwner">
+              <button
+                type="button"
+                class="header-edit-btn"
+                @click="openEditModal"
+              >
+                编辑资料
+              </button>
             </div>
             <div class="header-stats">
               <div class="header-stat">
@@ -141,50 +128,88 @@
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Main Layout -->
-      <div class="profile-body-wrapper">
-        <div class="card chart-card">
-          <div class="card-header">
-            <h3 class="card-title">Rating 变化</h3>
-          </div>
-          <div class="card-body">
-            <div class="chart-inner">
-              <RatingChart
-                :user-account="user.account || ''"
-                :rating="user.rating || 1500"
-              />
-            </div>
+        <div class="profile-tabs-wrapper">
+          <div class="profile-tabs">
+            <router-link
+              :to="`/profile/${routeAccount}`"
+              class="tab-item"
+              :class="{ active: $route.name === 'userProfile' }"
+            >
+              我的主页
+            </router-link>
+            <router-link
+              :to="`/courses/${routeAccount}`"
+              class="tab-item"
+              :class="{ active: $route.name === 'userCourses' }"
+            >
+              我的课程
+            </router-link>
+            <router-link
+              :to="`/submissions/${routeAccount}`"
+              class="tab-item"
+              :class="{ active: $route.name === 'userSubmissions' }"
+            >
+              我的提交
+            </router-link>
+            <router-link
+              :to="`/contests/with/${routeAccount}`"
+              class="tab-item"
+              :class="{ active: $route.name === 'userContests' }"
+            >
+              我的比赛
+            </router-link>
+            <router-link
+              v-if="isOwner"
+              to="/profile/settings"
+              class="tab-item"
+              :class="{ active: $route.name === 'profileSettings' }"
+            >
+              设置
+            </router-link>
           </div>
         </div>
+      </div>
 
-        <div class="card heatmap-card">
-          <div class="card-header">
-            <h3 class="card-title">做题日历</h3>
-          </div>
-          <div class="card-body">
-            <ActivityHeatmap />
+      <!-- Main Layout via router-view -->
+      <div class="router-view-container">
+        <router-view></router-view>
+      </div>
+    </div>
 
-            <div class="stats-overview-inline">
-              <div class="stat-item">
-                <div class="stat-value text-success">
-                  {{ user.solvedCount || 0 }}
-                </div>
-                <div class="stat-label">解决</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-value text-success">
-                  {{ user.acceptedCount || 0 }}
-                </div>
-                <div class="stat-label">通过</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-value">{{ user.submitCount || 0 }}</div>
-                <div class="stat-label">提交</div>
-              </div>
-            </div>
-          </div>
+    <!-- Edit Modal -->
+    <div v-if="isEditing" class="modal-overlay" @click.self="isEditing = false">
+      <div class="modal-content">
+        <h3 class="modal-title">编辑个人资料</h3>
+        <div class="form-group">
+          <label>用户名</label>
+          <input
+            v-model="editForm.account"
+            class="edit-input"
+            placeholder="输入新的用户名"
+          />
+        </div>
+        <div class="form-group">
+          <label>个人简介</label>
+          <textarea
+            v-model="editForm.bio"
+            class="edit-input edit-textarea"
+            placeholder="介绍一下自己吧~"
+          ></textarea>
+        </div>
+        <div class="form-group">
+          <label>学校</label>
+          <input
+            v-model="editForm.school"
+            class="edit-input"
+            placeholder="所在学校"
+          />
+        </div>
+        <div class="modal-actions">
+          <button class="cancel-btn modal-btn" @click="isEditing = false">
+            取消
+          </button>
+          <button class="save-btn modal-btn" @click="saveProfile">保存</button>
         </div>
       </div>
     </div>
@@ -192,18 +217,59 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
-import { useRoute } from "vue-router";
+import { ref, onMounted, watch, computed, provide } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useStore } from "vuex";
 import { ProfileControllerService } from "../../../../generated/services/ProfileControllerService";
 import type { UserVO } from "../../../../generated/models/UserVO";
-import RatingChart from "./components/RatingChart.vue";
-import ActivityHeatmap from "./components/ActivityHeatmap.vue";
+import type { UserDetailVO } from "../../../../generated/models/UserDetailVO";
+import type { UpdateProfileDTO } from "../../../../generated/models/UpdateProfileDTO";
 
 const route = useRoute();
+const router = useRouter();
+const store = useStore();
+
 const user = ref<UserVO | null>(null);
+const privateInfo = ref<UserDetailVO | null>(null);
+provide("profileUser", user);
+provide("privateInfo", privateInfo);
+
 const loading = ref(true);
 const error = ref("");
 const defaultAvatar = "https://picsum.photos/200";
+
+const fileInput = ref<HTMLInputElement | null>(null);
+
+const routeAccount = computed(() => {
+  // If it's settings page and no account parameter, we fallback to logged in user
+  if (route.name === "profileSettings") {
+    return store.state.user?.account || "";
+  }
+  return (route.params.account as string) || store.state.user?.account || "";
+});
+
+const isOwner = computed(() => {
+  if (!store.state.user) return false;
+  return store.state.user.account === routeAccount.value;
+});
+
+const isEditing = ref(false);
+const editForm = ref<UpdateProfileDTO>({
+  account: "",
+  bio: "",
+  school: "",
+});
+
+const openEditModal = () => {
+  if (user.value) {
+    editForm.value = {
+      account: user.value.account,
+      bio: user.value.bio,
+      school: user.value.school,
+    };
+  }
+  isEditing.value = true;
+};
 
 const getRankColor = (rating: number) => {
   if (rating >= 2400) return "color-red";
@@ -215,13 +281,47 @@ const getRankColor = (rating: number) => {
   return "color-gray";
 };
 
-const formatDate = (dateString?: string) => {
-  if (!dateString) return "Never";
-  const date = new Date(dateString);
-  return date.toLocaleString();
+const triggerAvatarUpload = () => {
+  fileInput.value?.click();
+};
+
+const onAvatarChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (target.files && target.files.length > 0) {
+    const file = target.files[0];
+    try {
+      const res = await ProfileControllerService.uploadAvatarUsingPut(file);
+      if (res.code === 0) {
+        fetchUserProfile(routeAccount.value);
+        alert("头像修改成功");
+      } else {
+        alert("上传失败: " + res.message);
+      }
+    } catch (err: any) {
+      alert("网络错误: " + err.message);
+    }
+    target.value = "";
+  }
+};
+
+const saveProfile = async () => {
+  try {
+    const res = await ProfileControllerService.updateProfileUsingPut(
+      editForm.value
+    );
+    if (res.code === 0) {
+      isEditing.value = false;
+      fetchUserProfile(editForm.value.account || routeAccount.value);
+    } else {
+      alert("更新失败: " + res.message);
+    }
+  } catch (err: any) {
+    alert("网络错误: " + err.message);
+  }
 };
 
 const fetchUserProfile = async (account: string) => {
+  if (!account) return;
   loading.value = true;
   error.value = "";
   try {
@@ -230,8 +330,20 @@ const fetchUserProfile = async (account: string) => {
     );
     if (res.code === 0 && res.data) {
       user.value = res.data;
+      editForm.value = {
+        account: user.value.account,
+        bio: user.value.bio,
+        school: user.value.school,
+      };
     } else {
       error.value = res.message || "获取用户信息失败";
+    }
+
+    if (store.state.user && store.state.user.account === account) {
+      const pRes = await ProfileControllerService.getPrivateProfileUsingGet();
+      if (pRes.code === 0 && pRes.data) {
+        privateInfo.value = pRes.data;
+      }
     }
   } catch (err: any) {
     error.value = err.message || "网络错误";
@@ -241,20 +353,15 @@ const fetchUserProfile = async (account: string) => {
 };
 
 onMounted(() => {
-  const account = route.params.account as string;
-  if (account) {
-    fetchUserProfile(account);
-  }
+  fetchUserProfile(routeAccount.value);
 });
 
-watch(
-  () => route.params.account,
-  (newAccount) => {
-    if (newAccount) {
-      fetchUserProfile(newAccount as string);
-    }
+watch(routeAccount, (newAccount) => {
+  if (newAccount) {
+    fetchUserProfile(newAccount);
+    isEditing.value = false;
   }
-);
+});
 </script>
 
 <style scoped>
@@ -264,15 +371,12 @@ watch(
   padding: 0;
   background-color: #0f172a;
   min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
-    Arial, sans-serif;
-  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: #f8fafc;
   overflow: hidden;
   position: relative;
 }
 
-/* 背景光效：参考 HomeView 保持整体系统UI一致性 */
 .profile-container::before {
   content: "";
   position: fixed;
@@ -322,38 +426,22 @@ watch(
 }
 
 .profile-content {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
   position: relative;
   z-index: 1;
 }
 
-/* Header & Banner */
 .profile-header-section {
-  width: 100%;
-  background-color: transparent;
-  padding-top: 25px;
-}
-
-/* 隐藏原有 banner 逻辑 */
-.profile-banner,
-.profile-banner::before,
-.profile-banner::after {
-  display: none;
+  padding-top: 15px;
 }
 
 .profile-header-info {
   width: 100%;
-  max-width: 980px;
+  max-width: 1080px;
   margin: 0 auto;
   padding: 0 40px 10px;
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  position: relative;
-  z-index: 10;
-  box-sizing: border-box;
 }
 
 .header-left {
@@ -364,15 +452,18 @@ watch(
 .header-right {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  position: relative;
   padding-bottom: 8px;
 }
 
 .header-edit-row {
   width: 100%;
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
+  margin-bottom: 6px;
 }
 
 .header-edit-btn {
@@ -382,9 +473,8 @@ watch(
   border-radius: 10px;
   padding: 6px 12px;
   font-size: 12px;
-  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: 0.2s;
 }
 
 .header-edit-btn:hover {
@@ -393,9 +483,54 @@ watch(
   background: rgba(30, 41, 59, 0.6);
 }
 
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 300px;
+}
+
+.edit-input {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid #334155;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  outline: none;
+}
+
+.edit-textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.save-btn,
+.cancel-btn {
+  padding: 4px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.save-btn {
+  background: #3b82f6;
+  color: white;
+}
+
+.cancel-btn {
+  background: #475569;
+  color: white;
+}
+
 .header-stats {
   display: flex;
-  gap: 28px;
+  gap: 24px;
 }
 
 .header-stat {
@@ -405,46 +540,59 @@ watch(
   gap: 4px;
 }
 
-.header-stat .stat-label {
+.stat-label {
   font-size: 12px;
   color: #94a3b8;
-  font-weight: 500;
 }
 
-.header-stat .stat-value {
-  font-size: 18px;
+.stat-value {
+  font-size: 16px;
   font-weight: 700;
   color: #f8fafc;
-  text-align: center;
 }
 
 .avatar-wrapper {
   position: relative;
-  z-index: 2;
   margin-right: 20px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.avatar-wrapper.clickable {
+  cursor: pointer;
 }
 
 .avatar {
-  width: 100px;
-  height: 100px;
+  width: 90px;
+  height: 90px;
   border-radius: 50%;
   object-fit: cover;
-  border: 4px solid #0f172a;
-  background-color: #0f172a;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  transition: transform 0.3s ease;
+  border: 3px solid #0f172a;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
-.avatar:hover {
-  transform: scale(1.05);
+.avatar-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.5);
+  font-size: 11px;
+  text-align: center;
+  color: white;
+  padding: 4px 0;
+  opacity: 0;
+  transition: 0.3s;
+}
+
+.avatar-wrapper.clickable:hover .avatar-overlay {
+  opacity: 1;
 }
 
 .user-main-info {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  padding-bottom: 8px;
-  z-index: 2;
+  padding-bottom: 4px;
 }
 
 .name-edit-wrapper {
@@ -454,20 +602,9 @@ watch(
 }
 
 .username {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   margin: 0;
-  letter-spacing: 0.5px;
-  color: #f8fafc;
-}
-
-.desktop-btn {
-  position: absolute;
-  right: 40px;
-}
-
-.mobile-btn {
-  display: none;
 }
 
 .info-row {
@@ -479,195 +616,66 @@ watch(
   margin-top: 6px;
 }
 
-.info-row svg {
-  opacity: 0.8;
-  flex-shrink: 0;
-}
-
-.user-bio {
-  line-height: 1.5;
-  max-width: 450px;
-}
-
-.empty-bio {
-  color: #64748b;
-  font-style: italic;
-}
-
-.user-status {
-  cursor: default;
-  position: relative;
-}
-
-.custom-tooltip {
-  visibility: hidden;
-  opacity: 0;
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin-top: 6px;
-  background-color: #1e293b;
-  color: #e2e8f0;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-  white-space: nowrap;
-  z-index: 100;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  border: 1px solid #334155;
-  transition: opacity 0.1s ease;
-}
-
-.user-status:hover .custom-tooltip {
-  visibility: visible;
-  opacity: 1;
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-left: 3px;
-  margin-right: 3px;
-}
-
-.status-dot.offline {
-  background-color: #64748b;
-}
-
-.status-dot.online {
-  background-color: #34c759;
-}
-
-/* Body Layout */
-.profile-body-wrapper {
+/* New TABS layout styling */
+.profile-tabs-wrapper {
   width: 100%;
-  max-width: 980px; /* 【核心改动】缩小统一容器到 980px，让上方支持100%宽度的 Rating 曲线自适应收缩到底侧做题日历真实的原生宽度，做到完美物理对齐 */
-  margin: 0 auto;
-  padding: 20px 40px 80px;
-  display: flex;
-  flex-direction: column;
-  gap: 60px;
-  align-items: center;
-  box-sizing: border-box;
-}
-
-.chart-inner {
-  width: 100%;
-  height: 100%;
+  max-width: 1080px;
+  margin: 20px auto 0;
+  padding: 0 40px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
   display: flex;
   justify-content: center;
-  align-items: center;
-  min-height: 400px;
-  margin: 0 auto;
 }
 
-/* 移除所有 scale 和变形代码，直接让其按本来 1.0 的大小居中显示 */
-:deep(.heatmap-container),
-:deep(.v-calendar) {
-  width: 100%;
-  justify-content: center;
+.profile-tabs {
   display: flex;
-}
-
-.heatmap-card :deep(.heatmap-container) {
-  transform: scale(1.1);
-  transform-origin: top center;
-}
-
-/* 恢复默认正常边距即可 */
-.heatmap-card .card-body {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding-bottom: 24px;
-}
-
-.stats-overview-inline {
-  display: flex;
-  justify-content: center;
   gap: 40px;
-  margin-top: 20px;
-  padding-top: 0;
-  border-top: none;
-}
-
-/* Card General Style */
-.card {
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  border-radius: 0;
-}
-
-.card:hover {
-  transform: none;
-  box-shadow: none;
-  background: transparent;
-}
-
-.card-header {
-  padding: 0 0 30px 0;
-  width: 100%;
-  text-align: center;
-}
-
-.card-title {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 600;
-  color: #f8fafc;
-  display: flex;
-  align-items: center;
   justify-content: center;
-  letter-spacing: 2px;
 }
 
-.card-title::before {
-  display: none;
+.tab-item {
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 10px 0;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  cursor: pointer;
 }
 
-.card-body {
-  padding: 0;
+.tab-item:hover {
+  color: #f8fafc;
+}
+
+.tab-item.active {
+  color: #3b82f6;
+  border-bottom: 2px solid #3b82f6;
+}
+
+.router-view-container {
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.text-success {
-  color: #34c759 !important;
+  min-height: 500px;
 }
 
 .color-red {
   color: #ff453a !important;
 }
-
 .color-orange {
   color: #ff9f0a !important;
 }
-
 .color-purple {
   color: #bf5af2 !important;
 }
-
 .color-blue {
   color: #0a84ff !important;
 }
-
 .color-cyan {
   color: #64d2ff !important;
 }
-
 .color-green {
   color: #30d158 !important;
 }
-
 .color-gray {
   color: #98989d !important;
 }
@@ -677,7 +685,6 @@ watch(
   text-align: center;
   padding: 60px;
   font-size: 18px;
-  font-weight: 500;
   color: #94a3b8;
 }
 
@@ -685,97 +692,55 @@ watch(
   color: #ff453a;
 }
 
-@media (max-width: 1100px) {
-  .profile-body-wrapper {
-    grid-template-columns: 1fr;
-  }
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
-
-@media (max-width: 800px) {
-  .profile-header-info {
-    flex-direction: column;
-    align-items: center;
-    padding: 0 20px 20px;
-    text-align: center;
-  }
-
-  .header-left {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .avatar-wrapper {
-    margin-right: 0;
-    margin-bottom: 20px;
-  }
-
-  .header-right {
-    margin-top: 30px;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-  }
-
-  .mobile-btn {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-    margin-bottom: 12px;
-  }
-
-  .desktop-btn {
-    display: none;
-  }
-
-  .header-stats {
-    justify-content: center;
-    width: 100%;
-  }
-
-  .profile-body-wrapper {
-    padding: 20px 16px;
-  }
-
-  .heatmap-card :deep(.heatmap-container) {
-    transform: scale(1);
-  }
-}
-
-.detail-item .value {
-  color: #f8fafc;
-  font-weight: 500;
-  text-align: right;
-  max-width: 65%;
-  word-break: break-all;
-}
-
-/* Stats overview */
-.stats-overview-inline .stat-item {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+.modal-content {
+  background: #1e293b;
+  border: 1px solid #334155;
   border-radius: 12px;
-  padding: 16px 24px;
+  width: 400px;
+  padding: 24px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  transition: background 0.3s;
-  min-width: 120px;
+  gap: 16px;
 }
-
-.stats-overview-inline .stat-item:hover {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.stat-value {
-  font-size: 24px;
-  font-weight: 700;
+.modal-title {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
   color: #f8fafc;
 }
-
-.stat-label {
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.form-group label {
   font-size: 13px;
   color: #94a3b8;
-  font-weight: 500;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 10px;
+}
+.modal-btn {
+  padding: 8px 16px;
+  font-size: 14px;
+  border-radius: 6px;
 }
 </style>
