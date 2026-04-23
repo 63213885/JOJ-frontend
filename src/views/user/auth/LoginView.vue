@@ -202,7 +202,7 @@ export default defineComponent({
       } catch (err: any) {
         // eslint-disable-line @typescript-eslint/no-explicit-any
         console.error(err);
-        showNotification(err.body?.message || err.message || "发送失败");
+        showNotification(err.body?.msg || err.message || "发送失败");
         counting.value = false;
         countDown.value = 60;
       }
@@ -247,7 +247,7 @@ export default defineComponent({
       } catch (err: any) {
         // eslint-disable-line @typescript-eslint/no-explicit-any
         console.error(err);
-        showNotification(err.body?.message || err.message || "登录失败");
+        showNotification(err.body?.msg || err.message || "登录失败");
       } finally {
         loading.value = false;
       }

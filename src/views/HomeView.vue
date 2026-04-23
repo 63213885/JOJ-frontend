@@ -46,6 +46,15 @@
         </div>
       </div>
     </section>
+
+    <!-- Notification Toast (for demonstration, can be removed) -->
+    <div
+      v-if="showToast"
+      :class="['notification-toast', toastType]"
+      @click="showToast = false"
+    >
+      {{ toastMessage }}
+    </div>
   </div>
 </template>
 
@@ -81,6 +90,10 @@ export default defineComponent({
       },
     ]);
 
+    const showToast = ref(false);
+    const toastMessage = ref("");
+    const toastType = ref("");
+
     const goToRegister = () => {
       router.push("/auth/register");
     };
@@ -88,17 +101,30 @@ export default defineComponent({
     const handleOk = async () => {
       try {
         const res = await AuthControllerService.okUsingGet();
-        alert("连接成功：" + JSON.stringify(res));
+        showNotification("连接成功：" + JSON.stringify(res), "success");
       } catch (err) {
         console.error(err);
-        alert("连接失败，请检查网络");
+        showNotification("连接失败，请检查网络", "error");
       }
+    };
+
+    const showNotification = (message: string, type: string) => {
+      toastMessage.value = message;
+      toastType.value = "type-" + type;
+      showToast.value = true;
+
+      setTimeout(() => {
+        showToast.value = false;
+      }, 3000);
     };
 
     return {
       announcements,
       goToRegister,
       handleOk,
+      showToast,
+      toastMessage,
+      toastType,
     };
   },
 });
@@ -321,6 +347,48 @@ export default defineComponent({
 
 .read-more:hover {
   color: #60a5fa;
+}
+
+/* Notification Toast */
+.notification-toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  z-index: 10000;
+  animation: slideDownToast 0.3s ease;
+  white-space: nowrap;
+}
+
+.notification-toast.type-success {
+  background: rgba(34, 197, 94, 0.9);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+
+.notification-toast.type-error {
+  background: rgba(239, 68, 68, 0.9);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.notification-toast.type-info {
+  background: rgba(59, 130, 246, 0.9);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+@keyframes slideDownToast {
+  from {
+    transform: translate(-50%, -20px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
 }
 
 @media (max-width: 768px) {

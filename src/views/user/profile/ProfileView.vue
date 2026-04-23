@@ -32,6 +32,23 @@
                 <h2 :class="getRankColor(user.rating || 1500)" class="username">
                   {{ user.account }}
                 </h2>
+                <div
+                  v-if="!isOwner && store.state.user"
+                  class="relation-actions"
+                >
+                  <button
+                    class="relation-btn"
+                    :class="{ following: relationStatus.isFollowing }"
+                    @mouseenter="isHoveringRelBtn = true"
+                    @mouseleave="isHoveringRelBtn = false"
+                    @click="toggleFollow"
+                  >
+                    {{ relationDisplayContent }}
+                  </button>
+                  <button class="message-btn" @click="handleMessage">
+                    私信
+                  </button>
+                </div>
               </div>
               <div class="info-row user-bio" v-if="user.bio">
                 <svg
@@ -117,11 +134,17 @@
                   {{ user.rating || 1500 }}
                 </div>
               </div>
-              <div class="header-stat">
+              <div
+                class="header-stat clickable"
+                @click="openRelationModal('following')"
+              >
                 <div class="stat-label">关注</div>
                 <div class="stat-value">{{ user.followingCount || 0 }}</div>
               </div>
-              <div class="header-stat">
+              <div
+                class="header-stat clickable"
+                @click="openRelationModal('followers')"
+              >
                 <div class="stat-label">粉丝</div>
                 <div class="stat-value">{{ user.followerCount || 0 }}</div>
               </div>
@@ -213,14 +236,59 @@
         </div>
       </div>
     </div>
+
+    <!-- Relation Modal -->
+    <div
+      v-if="showRelationModal"
+      class="modal-overlay"
+      @click.self="closeRelationModal"
+    >
+      <div class="relation-modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">
+            {{ relationModalType === "followers" ? "粉丝列表" : "关注列表" }}
+          </h3>
+          <button class="close-icon-btn" @click="closeRelationModal">×</button>
+        </div>
+        <div class="relation-list" v-if="relationList.length > 0">
+          <div
+            class="relation-item"
+            v-for="relUser in relationList"
+            :key="relUser.id"
+          >
+            <img :src="relUser.avatarUrl || defaultAvatar" class="rel-avatar" />
+            <div class="rel-info">
+              <div
+                class="rel-name"
+                :class="getRankColor(relUser.rating || 1500)"
+              >
+                {{ relUser.account }}
+              </div>
+              <div class="rel-bio" v-if="relUser.bio">{{ relUser.bio }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="relation-empty" v-else>暂无数据</div>
+      </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div
+      v-if="notification.show"
+      class="notification-toast"
+      :class="`type-${notification.type}`"
+    >
+      {{ notification.message }}
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, computed, provide } from "vue";
+import { ref, onMounted, watch, computed, provide, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useStore } from "vuex";
 import { ProfileControllerService } from "../../../../generated/services/ProfileControllerService";
+import { RelationControllerService } from "../../../../generated/services/RelationControllerService";
 import type { UserVO } from "../../../../generated/models/UserVO";
 import type { UserDetailVO } from "../../../../generated/models/UserDetailVO";
 import type { UpdateProfileDTO } from "../../../../generated/models/UpdateProfileDTO";
@@ -239,6 +307,24 @@ const error = ref("");
 const defaultAvatar = "https://picsum.photos/200";
 
 const fileInput = ref<HTMLInputElement | null>(null);
+
+const notification = reactive({
+  show: false,
+  message: "",
+  type: "error", // 'error' or 'success' or 'info'
+});
+
+const showNotification = (
+  msg: string,
+  type: "error" | "success" | "info" = "error"
+) => {
+  notification.message = msg;
+  notification.type = type;
+  notification.show = true;
+  setTimeout(() => {
+    notification.show = false;
+  }, 3000);
+};
 
 const routeAccount = computed(() => {
   // If it's settings page and no account parameter, we fallback to logged in user
@@ -259,6 +345,105 @@ const editForm = ref<UpdateProfileDTO>({
   bio: "",
   school: "",
 });
+
+const relationStatus = ref<{ isFollowing: boolean; isFollower: boolean }>({
+  isFollowing: false,
+  isFollower: false,
+});
+
+const isHoveringRelBtn = ref(false);
+
+const relationDisplayContent = computed(() => {
+  if (relationStatus.value.isFollowing && relationStatus.value.isFollower) {
+    return isHoveringRelBtn.value ? "取消关注" : "互相关注";
+  } else if (relationStatus.value.isFollowing) {
+    return isHoveringRelBtn.value ? "取消关注" : "已关注";
+  }
+  return "+关注";
+});
+
+const fetchRelationStatus = async (toUserId: number) => {
+  if (!store.state.user) return;
+  try {
+    const res = await RelationControllerService.statusUsingGet(toUserId);
+    if (res.code === 0 && res.data) {
+      // The backend returns keys: "following", "followedBy", "mutual"
+      relationStatus.value.isFollowing = (res.data as any).following || false;
+      relationStatus.value.isFollower = (res.data as any).followedBy || false;
+    }
+  } catch (err: any) {
+    console.error("Failed to fetch relation status:", err);
+  }
+};
+
+const toggleFollow = async () => {
+  const targetId = Number(user.value?.id);
+  if (!targetId) return;
+  if (!store.state.user) {
+    showNotification("请先登录", "info");
+    return;
+  }
+
+  try {
+    if (relationStatus.value.isFollowing) {
+      const res = await RelationControllerService.unfollowUsingPost(targetId);
+      if (res.code === 0) {
+        relationStatus.value.isFollowing = false;
+        user.value!.followerCount = Math.max(
+          0,
+          (user.value!.followerCount || 0) - 1
+        );
+      } else {
+        showNotification("操作失败：" + (res as any).msg, "error");
+      }
+    } else {
+      const res = await RelationControllerService.followUsingPost(targetId);
+      if (res.code === 0) {
+        relationStatus.value.isFollowing = true;
+        user.value!.followerCount = (user.value!.followerCount || 0) + 1;
+      } else {
+        showNotification("操作失败：" + (res as any).msg, "error");
+      }
+    }
+  } catch (err: any) {
+    showNotification(
+      "操作异常：" + (err.body?.msg || err.message || "未知错误"),
+      "error"
+    );
+  }
+};
+
+const handleMessage = () => {
+  showNotification("私信功能开发中", "info");
+};
+
+const showRelationModal = ref(false);
+const relationModalType = ref<"following" | "followers">("followers");
+const relationList = ref<UserVO[]>([]);
+
+const openRelationModal = async (type: "following" | "followers") => {
+  showRelationModal.value = true;
+  relationModalType.value = type;
+  relationList.value = [];
+  const targetId = user.value?.id ? Number(user.value.id) : undefined;
+  try {
+    let res;
+    if (type === "followers") {
+      res = await RelationControllerService.followersUsingGet(50, 0, targetId);
+    } else {
+      res = await RelationControllerService.followingUsingGet(50, 0, targetId);
+    }
+    if (res.code === 0 && res.data) {
+      relationList.value = res.data;
+    }
+  } catch (err: any) {
+    console.error("Failed to fetch relation list:", err);
+  }
+};
+
+const closeRelationModal = () => {
+  showRelationModal.value = false;
+};
 
 const openEditModal = () => {
   if (user.value) {
@@ -293,12 +478,12 @@ const onAvatarChange = async (event: Event) => {
       const res = await ProfileControllerService.uploadAvatarUsingPut(file);
       if (res.code === 0) {
         fetchUserProfile(routeAccount.value);
-        alert("头像修改成功");
+        showNotification("头像修改成功", "success");
       } else {
-        alert("上传失败: " + res.message);
+        showNotification("上传失败: " + (res as any).msg, "error");
       }
     } catch (err: any) {
-      alert("网络错误: " + err.message);
+      showNotification("网络错误: " + (err.body?.msg || err.message), "error");
     }
     target.value = "";
   }
@@ -312,11 +497,12 @@ const saveProfile = async () => {
     if (res.code === 0) {
       isEditing.value = false;
       fetchUserProfile(editForm.value.account || routeAccount.value);
+      showNotification("修改成功", "success");
     } else {
-      alert("更新失败: " + res.message);
+      showNotification("更新失败: " + (res as any).msg, "error");
     }
   } catch (err: any) {
-    alert("网络错误: " + err.message);
+    showNotification("网络错误: " + (err.body?.msg || err.message), "error");
   }
 };
 
@@ -324,6 +510,11 @@ const fetchUserProfile = async (account: string) => {
   if (!account) return;
   loading.value = true;
   error.value = "";
+  relationStatus.value = {
+    isFollowing: false,
+    isFollower: false,
+  };
+  isHoveringRelBtn.value = false;
   try {
     const res = await ProfileControllerService.getPublicProfileUsingGet(
       account
@@ -335,8 +526,16 @@ const fetchUserProfile = async (account: string) => {
         bio: user.value.bio,
         school: user.value.school,
       };
+      const targetId = Number(user.value.id);
+      if (
+        store.state.user &&
+        store.state.user.account !== account &&
+        targetId
+      ) {
+        await fetchRelationStatus(targetId);
+      }
     } else {
-      error.value = res.message || "获取用户信息失败";
+      error.value = (res as any).msg || "获取用户信息失败";
     }
 
     if (store.state.user && store.state.user.account === account) {
@@ -346,7 +545,7 @@ const fetchUserProfile = async (account: string) => {
       }
     }
   } catch (err: any) {
-    error.value = err.message || "网络错误";
+    error.value = err.body?.msg || err.message || "网络错误";
   } finally {
     loading.value = false;
   }
@@ -362,6 +561,18 @@ watch(routeAccount, (newAccount) => {
     isEditing.value = false;
   }
 });
+
+watch(
+  () => store.state.user,
+  (newUser) => {
+    if (newUser && user.value && newUser.account !== routeAccount.value) {
+      const targetId = Number(user.value.id);
+      if (targetId) {
+        fetchRelationStatus(targetId);
+      }
+    }
+  }
+);
 </script>
 
 <style scoped>
@@ -551,6 +762,15 @@ watch(routeAccount, (newAccount) => {
   color: #f8fafc;
 }
 
+.header-stat.clickable {
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.header-stat.clickable:hover {
+  opacity: 0.8;
+}
+
 .avatar-wrapper {
   position: relative;
   margin-right: 20px;
@@ -599,6 +819,58 @@ watch(routeAccount, (newAccount) => {
   display: flex;
   align-items: center;
   margin: 0 0 6px 0;
+  gap: 16px;
+}
+
+.relation-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.relation-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #3b82f6;
+  color: white;
+  transition: all 0.2s;
+  min-width: 82px;
+  text-align: center;
+}
+
+.relation-btn.following {
+  background: rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.relation-btn.following:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.relation-btn:not(.following):hover {
+  opacity: 0.9;
+}
+
+.message-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  color: #f8fafc;
+  transition: all 0.2s;
+}
+
+.message-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .username {
@@ -661,21 +933,27 @@ watch(routeAccount, (newAccount) => {
 .color-red {
   color: #ff453a !important;
 }
+
 .color-orange {
   color: #ff9f0a !important;
 }
+
 .color-purple {
   color: #bf5af2 !important;
 }
+
 .color-blue {
   color: #0a84ff !important;
 }
+
 .color-cyan {
   color: #64d2ff !important;
 }
+
 .color-green {
   color: #30d158 !important;
 }
+
 .color-gray {
   color: #98989d !important;
 }
@@ -706,6 +984,7 @@ watch(routeAccount, (newAccount) => {
   justify-content: center;
   align-items: center;
 }
+
 .modal-content {
   background: #1e293b;
   border: 1px solid #334155;
@@ -717,30 +996,158 @@ watch(routeAccount, (newAccount) => {
   flex-direction: column;
   gap: 16px;
 }
+
 .modal-title {
   margin: 0 0 8px 0;
   font-size: 18px;
   font-weight: 600;
   color: #f8fafc;
 }
+
 .form-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
+
 .form-group label {
   font-size: 13px;
   color: #94a3b8;
 }
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
   margin-top: 10px;
 }
+
 .modal-btn {
   padding: 8px 16px;
   font-size: 14px;
   border-radius: 6px;
+}
+
+/* Relation Modal */
+.relation-modal-content {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  width: 400px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.close-icon-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 24px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.relation-list {
+  padding: 10px 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.relation-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 20px;
+  gap: 12px;
+  transition: background 0.2s;
+}
+
+.relation-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.rel-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.rel-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.rel-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.rel-bio {
+  font-size: 12px;
+  color: #94a3b8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 250px;
+}
+
+.relation-empty {
+  padding: 40px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+/* Notification Toast */
+.notification-toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  z-index: 10000;
+  animation: slideDownToast 0.3s ease;
+  white-space: nowrap;
+}
+
+.notification-toast.type-success {
+  background: rgba(34, 197, 94, 0.9);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+
+.notification-toast.type-error {
+  background: rgba(239, 68, 68, 0.9);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.notification-toast.type-info {
+  background: rgba(59, 130, 246, 0.9);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+@keyframes slideDownToast {
+  from {
+    transform: translate(-50%, -20px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
 }
 </style>

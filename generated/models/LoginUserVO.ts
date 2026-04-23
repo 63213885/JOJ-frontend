@@ -7,6 +7,7 @@ export type LoginUserVO = {
     avatarUrl?: string;
     bio?: string;
     email?: string;
+    id?: number;
     lastLoginIp?: string;
     lastLoginTime?: string;
     phone?: string;

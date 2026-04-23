@@ -11,6 +11,7 @@ export type UserVO = {
     courseCount?: number;
     followerCount?: number;
     followingCount?: number;
+    id?: number;
     lastLoginIp?: string;
     lastLoginTime?: string;
     pkCount?: number;
