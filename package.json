@@ -8,9 +8,18 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "@guolao/vue-monaco-editor": "^1.6.0",
+    "@iktakahiro/markdown-it-katex": "^4.0.1",
+    "@types/markdown-it": "^14.1.2",
+    "@types/marked": "^6.0.0",
     "axios": "^1.15.0",
     "core-js": "^3.8.3",
     "echarts": "^6.0.0",
+    "katex": "^0.16.45",
+    "markdown-it": "^14.1.1",
+    "markdown-it-katex": "^2.0.3",
+    "marked": "^18.0.2",
+    "monaco-editor": "^0.55.1",
     "vue": "^3.2.13",
     "vue-router": "^4.0.3",
     "vuex": "^4.0.0"

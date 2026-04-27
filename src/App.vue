@@ -9,13 +9,29 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import { defineComponent, onMounted } from "vue";
+import { useStore } from "vuex";
 import TopNavBar from "@/components/TopNavBar.vue";
+import { AuthControllerService } from "../generated/services/AuthControllerService";
 
 export default defineComponent({
   name: "App",
   components: {
     TopNavBar,
+  },
+  setup() {
+    const store = useStore();
+
+    onMounted(async () => {
+      try {
+        const res = await AuthControllerService.getLoginUserUsingGet();
+        if (res.code === 0 && res.data) {
+          store.commit("setUser", res.data);
+        }
+      } catch (e) {
+        // user not logged in
+      }
+    });
   },
 });
 </script>

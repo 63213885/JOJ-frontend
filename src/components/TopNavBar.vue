@@ -9,7 +9,7 @@
         <router-link to="/">首页</router-link>
         <router-link to="/courses">课程</router-link>
         <router-link to="/contests">竞赛</router-link>
-        <router-link to="/problems">题库</router-link>
+        <router-link to="/problem/list">题库</router-link>
       </nav>
 
       <div class="auth-placeholder" v-if="isInitializing">

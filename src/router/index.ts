@@ -23,6 +23,26 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import("../views/user/auth/ResetPasswordView.vue"),
   },
   {
+    path: "/problem/list",
+    name: "problemList",
+    component: () => import("../views/problem/ProblemListView.vue"),
+  },
+  {
+    path: "/problem/create",
+    name: "problemCreate",
+    component: () => import("../views/problem/ProblemCreateView.vue"),
+  },
+  {
+    path: "/problem/edit/:id",
+    name: "problemEdit",
+    component: () => import("../views/problem/ProblemEditView.vue"),
+  },
+  {
+    path: "/problem/:id",
+    name: "problemDetail",
+    component: () => import("../views/problem/ProblemDetailView.vue"),
+  },
+  {
     path: "/user-layout",
     component: () => import("../views/user/profile/ProfileView.vue"),
     children: [
