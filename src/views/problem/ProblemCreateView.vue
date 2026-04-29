@@ -188,10 +188,10 @@ export default defineComponent({
       content: "",
       inputDesc: "",
       outputDesc: "",
-      samples: [{ input: "", output: "" }],
-      source: [],
-      status: 1,
       tags: [],
+      source: [],
+      samples: [{ input: "", output: "" }],
+      status: 0,
     });
 
     const showToast = ref(false);

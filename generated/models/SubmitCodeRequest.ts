@@ -2,8 +2,10 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type Sample_1 = {
-    input?: string;
-    output?: string;
+export type SubmitCodeRequest = {
+    code?: string;
+    contestId?: number;
+    language?: string;
+    problemId?: number;
 };
 

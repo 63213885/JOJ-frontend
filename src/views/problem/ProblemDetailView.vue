@@ -158,10 +158,11 @@
 
         <!-- 提交记录内容 -->
         <div
-          class="tab-content empty-content"
+          class="tab-content"
           v-if="activeTab === 'submissions'"
+          :class="{ 'empty-content': submissions.length === 0 }"
         >
-          <div class="empty-placeholder">
+          <div v-if="submissions.length === 0" class="empty-placeholder">
             <svg
               viewBox="0 0 24 24"
               width="48"
@@ -175,7 +176,37 @@
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
             </svg>
-            <p>提交记录功能开发中...</p>
+            <p>暂无提交记录</p>
+          </div>
+          <div v-else class="submissions-list">
+            <div
+              v-for="sub in submissions"
+              :key="sub.id"
+              class="submission-item-modern"
+              @click="openSubmissionDetail(sub.id)"
+            >
+              <div class="status-badge" :class="sub.status?.toLowerCase()">
+                <span class="status-dot"></span>
+                {{ sub.status || "Unknown" }}
+              </div>
+              <div class="sub-details">
+                <div class="detail-block">
+                  <span class="detail-label">执行用时</span>
+                  <span class="detail-value">{{ sub.timeUsed ?? 0 }} ms</span>
+                </div>
+                <div class="detail-block">
+                  <span class="detail-label">消耗内存</span>
+                  <span class="detail-value">{{ sub.memoryUsed ?? 0 }} MB</span>
+                </div>
+                <div class="detail-block">
+                  <span class="detail-label">语言</span>
+                  <span class="detail-value">{{ sub.language }}</span>
+                </div>
+              </div>
+              <div class="sub-time-modern">
+                {{ new Date(sub.submitTime ?? "").toLocaleString() }}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -192,10 +223,13 @@
             <div class="lang-selector">
               <label>语言: </label>
               <select v-model="codeLang">
-                <option value="cpp">C++</option>
-                <option value="java">Java</option>
-                <option value="python">Python</option>
-                <option value="go">Go</option>
+                <option
+                  v-for="lang in supportedLanguages"
+                  :key="lang"
+                  :value="lang"
+                >
+                  {{ lang }}
+                </option>
               </select>
             </div>
           </div>
@@ -279,7 +313,64 @@
             @mount="handleEditorMount"
           />
         </div>
+
+        <!-- 实时评测结果面板 -->
+        <div class="result-panel" v-if="showResultPanel">
+          <div class="result-header">
+            <h3>评测结果</h3>
+            <button class="btn-close" @click="showResultPanel = false">
+              ×
+            </button>
+          </div>
+          <div class="result-content">
+            <div v-if="!currentSubmissionResult" class="evaluating-state">
+              <div class="spinner"></div>
+              正在提交并初始化评测...
+            </div>
+            <div v-else class="eval-result">
+              <div
+                class="result-status"
+                :class="currentSubmissionResult.status?.toLowerCase()"
+                style="display: flex; align-items: center; gap: 8px"
+              >
+                <div class="spinner" v-if="isEvaluating"></div>
+                {{ currentSubmissionResult.status || "Pending" }}
+              </div>
+              <div class="result-details">
+                <div class="detail-item">
+                  <span class="label">执行用时：</span>
+                  <span class="value"
+                    >{{ currentSubmissionResult.timeUsed ?? 0 }} ms</span
+                  >
+                </div>
+                <div class="detail-item">
+                  <span class="label">消耗内存：</span>
+                  <span class="value"
+                    >{{ currentSubmissionResult.memoryUsed ?? 0 }} MB</span
+                  >
+                </div>
+                <div class="detail-item">
+                  <span class="label">评测语言：</span>
+                  <span class="value">{{
+                    currentSubmissionResult.language
+                  }}</span>
+                </div>
+                <div class="detail-item" v-if="currentSubmissionResult.score">
+                  <span class="label">评测得分：</span>
+                  <span class="value">{{ currentSubmissionResult.score }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <!-- 提交记录详情弹窗 -->
+      <submission-detail-modal
+        v-model:visible="showSubmissionModal"
+        :submission-id="selectedSubmissionId"
+        :problem-title="problem?.title"
+      />
 
       <!-- 提示消息 -->
       <div v-if="showToast" :class="['toast', toastType]">
@@ -290,11 +381,22 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed, onMounted, onUnmounted } from "vue";
+import {
+  defineComponent,
+  ref,
+  computed,
+  onMounted,
+  onUnmounted,
+  watch,
+} from "vue";
 import { useRoute } from "vue-router";
+import { useStore } from "vuex";
 import { ProblemControllerService } from "../../../generated/services/ProblemControllerService";
+import { SubmissionControllerService } from "../../../generated/services/SubmissionControllerService";
 import type { ProblemVO } from "../../../generated/models/ProblemVO";
+import type { SubmissionVO } from "../../../generated/models/SubmissionVO";
 import VueMonacoEditor from "@guolao/vue-monaco-editor";
+import SubmissionDetailModal from "@/components/SubmissionDetailModal.vue";
 import MarkdownIt from "markdown-it";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -311,9 +413,11 @@ export default defineComponent({
   name: "ProblemDetailView",
   components: {
     VueMonacoEditor,
+    SubmissionDetailModal,
   },
   setup() {
     const route = useRoute();
+    const store = useStore();
     const problemId = Number(route.params.id);
     const problem = ref<ProblemVO | null>(null);
     const samples = ref<any[]>([]);
@@ -397,6 +501,7 @@ export default defineComponent({
     };
 
     // Code Editor
+    const supportedLanguages = ref<string[]>(["cpp", "java", "python", "go"]);
     const codeLang = ref("cpp");
     const codeValue = ref("");
     const editorOptions = {
@@ -408,9 +513,26 @@ export default defineComponent({
     };
 
     const monacoLang = computed(() => {
-      // 简单映射，目前值已经是一致的
-      return codeLang.value;
+      const lang = codeLang.value.toLowerCase();
+      if (lang === "c++" || lang === "c/c++") return "cpp";
+      if (lang === "c#") return "c";
+      if (lang === "python3") return "python";
+      if (lang === "golang") return "go";
+      if (lang === "javascript") return "javascript";
+      if (lang === "typescript") return "typescript";
+      return lang;
     });
+
+    const getMonacoLang = (langVal: string) => {
+      const lang = langVal.toLowerCase();
+      if (lang === "c++" || lang === "c/c++") return "cpp";
+      if (lang === "c#") return "c";
+      if (lang === "python3") return "python";
+      if (lang === "golang") return "go";
+      if (lang === "javascript") return "javascript";
+      if (lang === "typescript") return "typescript";
+      return lang;
+    };
 
     const handleEditorMount = (editor: any) => {
       // 可在这里获取编辑器实例
@@ -492,8 +614,108 @@ export default defineComponent({
       }
     };
 
+    const loadLanguages = async () => {
+      try {
+        const res =
+          await SubmissionControllerService.listSupportedLanguagesUsingGet();
+        if (res.code === 0 && res.data) {
+          supportedLanguages.value = res.data;
+          if (res.data.length > 0) {
+            codeLang.value = res.data[0];
+          }
+        }
+      } catch (err: any) {
+        console.error("加载语言失败", err);
+      }
+    };
+
+    const submissions = ref<SubmissionVO[]>([]);
+    const loadSubmissions = async () => {
+      const userId = store.getters.currentUser?.id;
+      if (!userId) return;
+      try {
+        const res = await SubmissionControllerService.listSubmissionsUsingGet(
+          undefined,
+          undefined,
+          20,
+          0,
+          problemId,
+          undefined,
+          userId
+        );
+        if (res.code === 0 && res.data) {
+          submissions.value = res.data;
+        }
+      } catch (e) {
+        console.error("获取提交记录失败", e);
+      }
+    };
+
+    watch(activeTab, (val) => {
+      if (val === "submissions") loadSubmissions();
+    });
+
+    // 评测结果相关状态
+    const showResultPanel = ref(false);
+    const isEvaluating = ref(false);
+    const currentSubmissionResult = ref<SubmissionVO | null>(null);
+    let pollInterval: ReturnType<typeof setInterval> | null = null;
+
+    const stopPolling = () => {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+      }
+    };
+
+    const pollSubmissionStatus = (submissionId: string | number) => {
+      stopPolling();
+      isEvaluating.value = true;
+      showResultPanel.value = true;
+      currentSubmissionResult.value = null;
+
+      let pollCount = 0;
+      const maxPoll = 120; // 最多轮询约1分钟 (120 * 500ms)
+
+      pollInterval = setInterval(async () => {
+        pollCount++;
+        try {
+          const res = await SubmissionControllerService.getSubmissionUsingGet(
+            submissionId as any
+          );
+          if (res.code === 0 && res.data) {
+            currentSubmissionResult.value = res.data;
+            // 每轮询一次，如果有在提交记录列表页面，直接刷新列表以展示实时变更
+            if (activeTab.value === "submissions") loadSubmissions();
+
+            const status = res.data.status?.toLowerCase() || "";
+            // 如果状态不再是判断中/等待中，则停止轮询
+            if (
+              !status.includes("waiting") &&
+              !status.includes("pending") &&
+              !status.includes("judging")
+            ) {
+              isEvaluating.value = false;
+              stopPolling();
+              // 再最后刷新一遍保证是最终结果
+              if (activeTab.value === "submissions") loadSubmissions();
+            }
+          }
+        } catch (e) {
+          console.error("轮询评测状态出错", e);
+        }
+
+        if (pollCount >= maxPoll) {
+          isEvaluating.value = false;
+          stopPolling();
+          triggerToast("评测超时未返回结果", "error");
+        }
+      }, 500);
+    };
+
     onMounted(() => {
       loadProblem();
+      loadLanguages();
       window.addEventListener("resize", checkMobile);
       window.addEventListener("mousemove", doResize);
       window.addEventListener("mouseup", stopResize);
@@ -503,6 +725,7 @@ export default defineComponent({
       window.removeEventListener("resize", checkMobile);
       window.removeEventListener("mousemove", doResize);
       window.removeEventListener("mouseup", stopResize);
+      stopPolling();
     });
 
     const handleSelfTest = () => {
@@ -510,14 +733,58 @@ export default defineComponent({
       console.log("Code:", codeValue.value);
     };
 
-    const handleSubmit = () => {
-      triggerToast("功能开发中: 提交评测...", "success");
-      console.log("Language:", codeLang.value);
-      console.log("Code:", codeValue.value);
+    const handleSubmit = async () => {
+      if (!codeValue.value) {
+        triggerToast("代码不能为空", "error");
+        return;
+      }
+      const userId = store.getters.currentUser?.id;
+      if (!userId) {
+        triggerToast("请先登录", "error");
+        return;
+      }
+      try {
+        const res = await SubmissionControllerService.submitCodeUsingPost({
+          code: codeValue.value,
+          language: codeLang.value,
+          problemId: problemId,
+        });
+        if (res.code === 0) {
+          triggerToast("提交成功", "success");
+
+          if (activeTab.value === "submissions") {
+            loadSubmissions(); // 立刻刷新出新提交
+          }
+
+          // 不再跳转到 submissions tab
+          const submissionId = res.data;
+          if (submissionId !== undefined && submissionId !== null) {
+            pollSubmissionStatus(submissionId as any);
+          } else {
+            // 如果后端直接在这里就不返回 ID，我们给个保底提示并切回提交记录
+            activeTab.value = "submissions";
+            loadSubmissions();
+          }
+        } else {
+          triggerToast("提交失败: " + res.msg, "error");
+        }
+      } catch (err: any) {
+        triggerToast("提交出错", "error");
+      }
     };
 
     const handleAIExplain = () => {
       triggerToast("功能开发中: AI 讲解...", "success");
+    };
+
+    // 提交详情 Modal 相关逻辑
+    const showSubmissionModal = ref(false);
+    const selectedSubmissionId = ref<number | undefined>(undefined);
+
+    const openSubmissionDetail = (subId?: number) => {
+      if (!subId) return;
+      selectedSubmissionId.value = subId;
+      showSubmissionModal.value = true;
     };
 
     return {
@@ -533,9 +800,11 @@ export default defineComponent({
       problem,
       samples,
       showTags,
+      supportedLanguages,
       codeLang,
       codeValue,
       monacoLang,
+      getMonacoLang,
       editorOptions,
       handleEditorMount,
       renderMd,
@@ -545,6 +814,13 @@ export default defineComponent({
       showToast,
       toastMessage,
       toastType,
+      submissions,
+      showResultPanel,
+      isEvaluating,
+      currentSubmissionResult,
+      showSubmissionModal,
+      selectedSubmissionId,
+      openSubmissionDetail,
     };
   },
 });
@@ -931,6 +1207,277 @@ export default defineComponent({
 .editor-container {
   flex: 1;
   position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.result-panel {
+  height: 250px;
+  flex-shrink: 0;
+  background: #1e1e1e;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.result-header h3 {
+  margin: 0;
+  font-size: 15px;
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.btn-close {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.btn-close:hover {
+  color: #fff;
+}
+
+.result-content {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  color: #e2e8f0;
+}
+
+.evaluating-state {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  color: #3b82f6;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(59, 130, 246, 0.3);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.eval-result {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.result-status {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.result-status.accepted {
+  color: #10b981;
+}
+
+.result-status.wrong_answer,
+.result-status.error {
+  color: #ef4444;
+}
+
+.result-details {
+  display: flex;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-item .label {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.detail-item .value {
+  font-size: 16px;
+  font-weight: 500;
+  font-family: "Fira Code", monospace;
+}
+
+.evaluating-error {
+  color: #ef4444;
+}
+
+/* Modal 样式已被提取到专门的组件内，这里删除废弃部分 */
+
+.submissions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.submission-item-modern {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 16px 20px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.submissions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.submission-item-modern {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 16px 20px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.submission-item-modern:hover {
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  width: 140px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #64748b;
+}
+
+.status-badge.accepted {
+  color: #10b981;
+}
+
+.status-badge.accepted .status-dot {
+  background-color: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.status-badge.wrong_answer,
+.status-badge.error,
+.status-badge.time_limit_exceeded,
+.status-badge.memory_limit_exceeded {
+  color: #ef4444;
+}
+
+.status-badge.wrong_answer .status-dot,
+.status-badge.error .status-dot,
+.status-badge.time_limit_exceeded .status-dot,
+.status-badge.memory_limit_exceeded .status-dot {
+  background-color: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+}
+
+.status-badge.waiting,
+.status-badge.pending,
+.status-badge.judging {
+  color: #3b82f6;
+}
+
+.status-badge.waiting .status-dot,
+.status-badge.pending .status-dot,
+.status-badge.judging .status-dot {
+  background-color: #3b82f6;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+}
+
+.sub-details {
+  display: flex;
+  gap: 32px;
+  flex: 1;
+  padding-left: 24px;
+}
+
+.detail-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-label {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.detail-value {
+  font-size: 14px;
+  color: #e2e8f0;
+  font-family: "Fira Code", monospace;
+}
+
+.sub-time-modern {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+@media (max-width: 768px) {
+  .submission-item-modern {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .sub-details {
+    padding-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
 }
 
 .editor-actions {
