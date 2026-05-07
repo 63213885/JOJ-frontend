@@ -1323,8 +1323,16 @@ export default defineComponent({
 }
 
 .result-status.wrong_answer,
-.result-status.error {
+.result-status.error,
+.result-status.compile_error,
+.result-status.runtime_error {
   color: #ef4444;
+}
+
+.result-status.time_limit_exceeded,
+.result-status.memory_limit_exceeded,
+.result-status.output_limit_exceeded {
+  color: #ffffff;
 }
 
 .result-details {
@@ -1425,17 +1433,30 @@ export default defineComponent({
 
 .status-badge.wrong_answer,
 .status-badge.error,
-.status-badge.time_limit_exceeded,
-.status-badge.memory_limit_exceeded {
+.status-badge.compile_error,
+.status-badge.runtime_error {
   color: #ef4444;
 }
 
 .status-badge.wrong_answer .status-dot,
 .status-badge.error .status-dot,
-.status-badge.time_limit_exceeded .status-dot,
-.status-badge.memory_limit_exceeded .status-dot {
+.status-badge.compile_error .status-dot,
+.status-badge.runtime_error .status-dot {
   background-color: #ef4444;
   box-shadow: 0 0 8px #ef4444;
+}
+
+.status-badge.time_limit_exceeded,
+.status-badge.memory_limit_exceeded,
+.status-badge.output_limit_exceeded {
+  color: #ffffff;
+}
+
+.status-badge.time_limit_exceeded .status-dot,
+.status-badge.memory_limit_exceeded .status-dot,
+.status-badge.output_limit_exceeded .status-dot {
+  background-color: #ffffff;
+  box-shadow: 0 0 8px #ffffff;
 }
 
 .status-badge.waiting,

@@ -310,9 +310,15 @@ export default defineComponent({
 
 .status-text.wrong_answer,
 .status-text.error,
-.status-text.time_limit_exceeded,
-.status-text.memory_limit_exceeded {
+.status-text.compile_error,
+.status-text.runtime_error {
   color: #ef4444;
+}
+
+.status-text.time_limit_exceeded,
+.status-text.memory_limit_exceeded,
+.status-text.output_limit_exceeded {
+  color: #ffffff;
 }
 
 .status-text.waiting,
