@@ -17,7 +17,7 @@
             <span class="meta-label">评测结果</span>
             <span
               class="meta-value status-text"
-              :class="submission.status?.toLowerCase()"
+              :class="submission.status?.toLowerCase().replace(/\s+/g, '_')"
             >
               {{ submission.status }}
             </span>
