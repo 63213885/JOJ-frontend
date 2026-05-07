@@ -294,7 +294,6 @@ import type { UserDetailVO } from "../../../../generated/models/UserDetailVO";
 import type { UpdateProfileDTO } from "../../../../generated/models/UpdateProfileDTO";
 
 const route = useRoute();
-const router = useRouter();
 const store = useStore();
 
 const user = ref<UserVO | null>(null);

@@ -42,7 +42,7 @@
               </span>
               <span class="meta-item">
                 <i class="icon-memory"></i> 内存限制:
-                {{ problem?.memoryLimit }} MB
+                {{ Math.round((problem?.memoryLimit || 0) / 1024) }} MB
               </span>
             </div>
           </div>
@@ -196,7 +196,9 @@
                 </div>
                 <div class="detail-block">
                   <span class="detail-label">消耗内存</span>
-                  <span class="detail-value">{{ sub.memoryUsed ?? 0 }} MB</span>
+                  <span class="detail-value"
+                    >{{ Math.round((sub.memoryUsed ?? 0) / 1024) }} MB</span
+                  >
                 </div>
                 <div class="detail-block">
                   <span class="detail-label">语言</span>
@@ -346,7 +348,12 @@
                 <div class="detail-item">
                   <span class="label">消耗内存：</span>
                   <span class="value"
-                    >{{ currentSubmissionResult.memoryUsed ?? 0 }} MB</span
+                    >{{
+                      Math.round(
+                        (currentSubmissionResult.memoryUsed ?? 0) / 1024
+                      )
+                    }}
+                    MB</span
                   >
                 </div>
                 <div class="detail-item">
@@ -534,7 +541,7 @@ export default defineComponent({
       return lang;
     };
 
-    const handleEditorMount = (editor: any) => {
+    const handleEditorMount = () => {
       // 可在这里获取编辑器实例
     };
 
@@ -743,6 +750,18 @@ export default defineComponent({
         triggerToast("请先登录", "error");
         return;
       }
+
+      // 立即显示Pending状态
+      showResultPanel.value = true;
+      isEvaluating.value = true;
+      currentSubmissionResult.value = {
+        id: -1,
+        status: "Pending",
+        timeUsed: 0,
+        memoryUsed: 0,
+        language: codeLang.value,
+      } as unknown as SubmissionVO;
+
       try {
         const res = await SubmissionControllerService.submitCodeUsingPost({
           code: codeValue.value,
@@ -764,12 +783,17 @@ export default defineComponent({
             // 如果后端直接在这里就不返回 ID，我们给个保底提示并切回提交记录
             activeTab.value = "submissions";
             loadSubmissions();
+            isEvaluating.value = false;
           }
         } else {
           triggerToast("提交失败: " + res.msg, "error");
+          isEvaluating.value = false;
+          currentSubmissionResult.value = null;
         }
       } catch (err: any) {
         triggerToast("提交出错", "error");
+        isEvaluating.value = false;
+        currentSubmissionResult.value = null;
       }
     };
 
@@ -1473,6 +1497,7 @@ export default defineComponent({
     align-items: flex-start;
     gap: 16px;
   }
+
   .sub-details {
     padding-left: 0;
     width: 100%;

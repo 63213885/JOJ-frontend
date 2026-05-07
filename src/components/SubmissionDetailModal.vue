@@ -27,8 +27,10 @@
             <span class="meta-value">{{ submission.timeUsed ?? 0 }} ms</span>
           </div>
           <div class="meta-item">
-            <span class="meta-label">消耗内存</span>
-            <span class="meta-value">{{ submission.memoryUsed ?? 0 }} MB</span>
+            <span class="meta-label">内存</span>
+            <span class="meta-value"
+              >{{ Math.round((submission.memoryUsed ?? 0) / 1024) }} MB</span
+            >
           </div>
           <div class="meta-item">
             <span class="meta-label">语言</span>
@@ -72,6 +74,10 @@
       </div>
       <div class="modal-body loading-body" v-else>加载中...</div>
     </div>
+    <!-- 提示消息 -->
+    <div v-if="showToast" :class="['toast', toastType]">
+      {{ toastMessage }}
+    </div>
   </div>
 </template>
 
@@ -104,6 +110,22 @@ export default defineComponent({
   setup(props, { emit }) {
     const submission = ref<SubmissionVO | null>(null);
 
+    const showToast = ref(false);
+    const toastMessage = ref("");
+    const toastType = ref("type-success");
+
+    const triggerToast = (
+      msg: string,
+      type: "success" | "error" = "success"
+    ) => {
+      toastMessage.value = msg;
+      toastType.value = "type-" + type;
+      showToast.value = true;
+      setTimeout(() => {
+        showToast.value = false;
+      }, 3000);
+    };
+
     const loadSubmission = async () => {
       if (!props.submissionId) return;
       submission.value = null;
@@ -135,9 +157,10 @@ export default defineComponent({
     const copyToClipboard = async (text: string) => {
       try {
         await navigator.clipboard.writeText(text);
-        alert("复制成功 / Copied!");
+        triggerToast("复制成功", "success");
       } catch (err) {
         console.error(err);
+        triggerToast("复制失败", "error");
       }
     };
 
@@ -157,6 +180,9 @@ export default defineComponent({
       close,
       copyToClipboard,
       getMonacoLang,
+      showToast,
+      toastMessage,
+      toastType,
     };
   },
 });
@@ -266,15 +292,18 @@ export default defineComponent({
 .status-text {
   font-weight: 600;
 }
+
 .status-text.accepted {
   color: #10b981;
 }
+
 .status-text.wrong_answer,
 .status-text.error,
 .status-text.time_limit_exceeded,
 .status-text.memory_limit_exceeded {
   color: #ef4444;
 }
+
 .status-text.waiting,
 .status-text.pending,
 .status-text.judging {
@@ -336,5 +365,39 @@ export default defineComponent({
   flex: 1;
   position: relative;
   min-height: 400px;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  border-radius: 8px;
+  color: white;
+  font-weight: 500;
+  z-index: 11000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation: slideDownToast 0.3s ease;
+}
+
+.type-success {
+  background-color: #10b981;
+}
+
+.type-error {
+  background-color: #ef4444;
+}
+
+@keyframes slideDownToast {
+  from {
+    top: -50px;
+    opacity: 0;
+  }
+  to {
+    top: 24px;
+    opacity: 1;
+  }
 }
 </style>

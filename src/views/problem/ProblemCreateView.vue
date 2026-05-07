@@ -167,7 +167,6 @@ import { defineComponent, ref, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { ProblemControllerService } from "../../../generated/services/ProblemControllerService";
 import type { CreateProblemRequest } from "../../../generated/models/CreateProblemRequest";
-import type { Sample_1 } from "../../../generated/models/Sample_1";
 import MdEditor from "../../components/MdEditor.vue";
 
 export default defineComponent({
