@@ -6,7 +6,15 @@ module.exports = defineConfig({
   configureWebpack: {
     plugins: [
       new MonacoWebpackPlugin({
-        languages: ["cpp", "java", "python", "go", "javascript", "typescript", "c"],
+        languages: [
+          "cpp",
+          "java",
+          "python",
+          "go",
+          "javascript",
+          "typescript",
+          "c",
+        ],
       }),
     ],
   },

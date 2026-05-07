@@ -171,9 +171,16 @@ export default defineComponent({
       if (lang.includes("c#") || lang.includes("csharp")) return "csharp";
       if (lang.includes("py")) return "python";
       if (lang.includes("go")) return "go";
-      if (lang.includes("java") && !lang.includes("javascript") && !lang.includes("js")) return "java";
-      if (lang.includes("javascript") || lang.includes("js")) return "javascript";
-      if (lang.includes("typescript") || lang.includes("ts")) return "typescript";
+      if (
+        lang.includes("java") &&
+        !lang.includes("javascript") &&
+        !lang.includes("js")
+      )
+        return "java";
+      if (lang.includes("javascript") || lang.includes("js"))
+        return "javascript";
+      if (lang.includes("typescript") || lang.includes("ts"))
+        return "typescript";
       if (lang === "c") return "c";
       if (lang.includes("rust")) return "rust";
       return lang;
