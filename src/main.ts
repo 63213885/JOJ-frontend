@@ -3,9 +3,12 @@ import App from "./App.vue";
 import router from "./router";
 import store from "./store";
 
-import * as monaco from "monaco-editor";
 import { loader } from "@guolao/vue-monaco-editor";
 
-loader.config({ monaco });
+loader.config({
+  paths: {
+    vs: "https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.43.0/min/vs",
+  },
+});
 
 createApp(App).use(store).use(router).mount("#app");
