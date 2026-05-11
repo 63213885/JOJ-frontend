@@ -185,7 +185,10 @@
               class="submission-item-modern"
               @click="openSubmissionDetail(sub.id)"
             >
-              <div class="status-badge" :class="sub.status?.toLowerCase().replace(/\s+/g, '_')">
+              <div
+                class="status-badge"
+                :class="sub.status?.toLowerCase().replace(/\s+/g, '_')"
+              >
                 <span class="status-dot"></span>
                 {{ sub.status || "Unknown" }}
               </div>
@@ -332,7 +335,11 @@
             <div v-else class="eval-result">
               <div
                 class="result-status"
-                :class="currentSubmissionResult.status?.toLowerCase().replace(/\s+/g, '_')"
+                :class="
+                  currentSubmissionResult.status
+                    ?.toLowerCase()
+                    .replace(/\s+/g, '_')
+                "
                 style="display: flex; align-items: center; gap: 8px"
               >
                 <div class="spinner" v-if="isEvaluating"></div>
