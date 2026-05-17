@@ -122,9 +122,12 @@
 import { defineComponent, ref, reactive, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
-import { AuthControllerService } from "../../../../generated/services/AuthControllerService";
-import { SendCodeRequest, LoginRequest } from "../../../../generated";
 import scene = SendCodeRequest.scene;
+import {
+  AuthControllerService,
+  LoginRequest,
+  SendCodeRequest,
+} from "../../../../generated/user";
 
 export default defineComponent({
   name: "LoginView",

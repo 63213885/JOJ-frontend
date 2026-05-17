@@ -11,7 +11,7 @@
 
 <script setup lang="ts">
 import { inject, Ref } from "vue";
-import type { UserVO } from "../../../../generated/models/UserVO";
+import { UserVO } from "../../../../generated/user";
 
 const user = inject<Ref<UserVO | null>>("profileUser");
 </script>
@@ -25,6 +25,7 @@ const user = inject<Ref<UserVO | null>>("profileUser");
   flex-direction: column;
   gap: 40px;
 }
+
 .card {
   background: transparent;
   display: flex;
@@ -32,12 +33,14 @@ const user = inject<Ref<UserVO | null>>("profileUser");
   align-items: center;
   width: 100%;
 }
+
 .card-title {
   font-size: 20px;
   font-weight: 600;
   text-align: center;
   margin-bottom: 20px;
 }
+
 .card-body {
   width: 100%;
   display: flex;

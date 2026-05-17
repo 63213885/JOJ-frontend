@@ -84,8 +84,10 @@
 <script lang="ts">
 import { defineComponent, ref, watch } from "vue";
 import VueMonacoEditor from "@guolao/vue-monaco-editor";
-import { SubmissionControllerService } from "../../generated/services/SubmissionControllerService";
-import type { SubmissionVO } from "../../generated/models/SubmissionVO";
+import {
+  SubmissionControllerService,
+  SubmissionVO,
+} from "../../generated/problem";
 
 export default defineComponent({
   name: "SubmissionDetailModal",
@@ -311,6 +313,8 @@ export default defineComponent({
 .status-text.wrong_answer,
 .status-text.error,
 .status-text.compile_error,
+.status-text.presentation_error,
+.status-text.system_error,
 .status-text.runtime_error {
   color: #ef4444;
 }
@@ -321,7 +325,8 @@ export default defineComponent({
   color: #ffffff;
 }
 
-.status-text.waiting,
+.status-text.compiling,
+.status-text.running,
 .status-text.pending,
 .status-text.judging {
   color: #3b82f6;

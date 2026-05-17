@@ -12,7 +12,7 @@
 import { defineComponent, onMounted } from "vue";
 import { useStore } from "vuex";
 import TopNavBar from "@/components/TopNavBar.vue";
-import { AuthControllerService } from "../generated/services/AuthControllerService";
+import { AuthControllerService } from "../generated/user";
 
 export default defineComponent({
   name: "App",
@@ -28,8 +28,10 @@ export default defineComponent({
         if (res.code === 0 && res.data) {
           store.commit("setUser", res.data);
         }
-      } catch (e) {
-        // user not logged in
+      } catch (error) {
+        console.log("未登录或获取用户信息失败", error);
+      } finally {
+        store.commit("setInitialized");
       }
     });
   },

@@ -165,9 +165,12 @@
 <script lang="ts">
 import { defineComponent, ref, reactive } from "vue";
 import { useRouter } from "vue-router";
-import { ProblemControllerService } from "../../../generated/services/ProblemControllerService";
-import type { CreateProblemRequest } from "../../../generated/models/CreateProblemRequest";
+
 import MdEditor from "../../components/MdEditor.vue";
+import {
+  CreateProblemRequest,
+  ProblemControllerService,
+} from "../../../generated/problem";
 
 export default defineComponent({
   name: "ProblemCreateView",

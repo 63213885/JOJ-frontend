@@ -405,10 +405,7 @@ import {
 } from "vue";
 import { useRoute } from "vue-router";
 import { useStore } from "vuex";
-import { ProblemControllerService } from "../../../generated/services/ProblemControllerService";
-import { SubmissionControllerService } from "../../../generated/services/SubmissionControllerService";
-import type { ProblemVO } from "../../../generated/models/ProblemVO";
-import type { SubmissionVO } from "../../../generated/models/SubmissionVO";
+
 import VueMonacoEditor from "@guolao/vue-monaco-editor";
 import SubmissionDetailModal from "@/components/SubmissionDetailModal.vue";
 import MarkdownIt from "markdown-it";
@@ -416,6 +413,12 @@ import MarkdownIt from "markdown-it";
 // @ts-ignore
 import mk from "@iktakahiro/markdown-it-katex";
 import "katex/dist/katex.min.css";
+import {
+  ProblemControllerService,
+  ProblemVO,
+  SubmissionControllerService,
+  SubmissionVO,
+} from "../../../generated/problem";
 
 const md = new MarkdownIt({
   html: true,
@@ -695,7 +698,7 @@ export default defineComponent({
       let pollCount = 0;
       const maxPoll = 120; // 最多轮询约1分钟 (120 * 500ms)
 
-      pollInterval = setInterval(async () => {
+      const doPoll = async () => {
         pollCount++;
         try {
           const res = await SubmissionControllerService.getSubmissionUsingGet(
@@ -707,11 +710,11 @@ export default defineComponent({
             if (activeTab.value === "submissions") loadSubmissions();
 
             const status = res.data.status?.toLowerCase() || "";
-            // 如果状态不再是判断中/等待中，则停止轮询
+            // 只要依然是 Pending、Compiling、Running，就继续轮询
             if (
-              !status.includes("waiting") &&
               !status.includes("pending") &&
-              !status.includes("judging")
+              !status.includes("compiling") &&
+              !status.includes("running")
             ) {
               isEvaluating.value = false;
               stopPolling();
@@ -728,7 +731,11 @@ export default defineComponent({
           stopPolling();
           triggerToast("评测超时未返回结果", "error");
         }
-      }, 500);
+      };
+
+      // 立即发一次请求拿最新状态，然后每500ms轮询
+      doPoll();
+      pollInterval = setInterval(doPoll, 500);
     };
 
     onMounted(() => {
@@ -1332,6 +1339,8 @@ export default defineComponent({
 .result-status.wrong_answer,
 .result-status.error,
 .result-status.compile_error,
+.result-status.presentation_error,
+.result-status.system_error,
 .result-status.runtime_error {
   color: #ef4444;
 }
@@ -1441,6 +1450,8 @@ export default defineComponent({
 .status-badge.wrong_answer,
 .status-badge.error,
 .status-badge.compile_error,
+.status-badge.presentation_error,
+.status-badge.system_error,
 .status-badge.runtime_error {
   color: #ef4444;
 }
@@ -1448,6 +1459,8 @@ export default defineComponent({
 .status-badge.wrong_answer .status-dot,
 .status-badge.error .status-dot,
 .status-badge.compile_error .status-dot,
+.status-badge.presentation_error .status-dot,
+.status-badge.system_error .status-dot,
 .status-badge.runtime_error .status-dot {
   background-color: #ef4444;
   box-shadow: 0 0 8px #ef4444;
@@ -1466,13 +1479,15 @@ export default defineComponent({
   box-shadow: 0 0 8px #ffffff;
 }
 
-.status-badge.waiting,
+.status-badge.compiling,
+.status-badge.running,
 .status-badge.pending,
 .status-badge.judging {
   color: #3b82f6;
 }
 
-.status-badge.waiting .status-dot,
+.status-badge.compiling .status-dot,
+.status-badge.running .status-dot,
 .status-badge.pending .status-dot,
 .status-badge.judging .status-dot {
   background-color: #3b82f6;

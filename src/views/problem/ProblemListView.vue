@@ -86,8 +86,10 @@
 import { defineComponent, ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
-import { ProblemControllerService } from "../../../generated/services/ProblemControllerService";
-import type { ProblemVO } from "../../../generated/models/ProblemVO";
+import {
+  ProblemControllerService,
+  ProblemVO,
+} from "../../../generated/problem";
 
 export default defineComponent({
   name: "ProblemListView",

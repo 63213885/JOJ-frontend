@@ -44,9 +44,9 @@
 
 <script setup lang="ts">
 import { inject, Ref } from "vue";
-import type { UserVO } from "../../../../generated/models/UserVO";
 import RatingChart from "./components/RatingChart.vue";
 import ActivityHeatmap from "./components/ActivityHeatmap.vue";
+import { UserVO } from "../../../../generated/user";
 
 const user = inject<Ref<UserVO | null>>("profileUser");
 </script>
@@ -60,6 +60,7 @@ const user = inject<Ref<UserVO | null>>("profileUser");
   flex-direction: column;
   gap: 40px;
 }
+
 .card {
   background: transparent;
   display: flex;
@@ -67,18 +68,21 @@ const user = inject<Ref<UserVO | null>>("profileUser");
   align-items: center;
   width: 100%;
 }
+
 .card-title {
   font-size: 20px;
   font-weight: 600;
   text-align: center;
   margin-bottom: 20px;
 }
+
 .card-body {
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
+
 .chart-inner {
   width: 100%;
   height: 100%;
@@ -88,17 +92,20 @@ const user = inject<Ref<UserVO | null>>("profileUser");
   min-height: 400px;
   margin: 0 auto;
 }
+
 .heatmap-scaled {
   transform: scale(1.15);
   transform-origin: top center;
   margin-bottom: 20px;
 }
+
 .stats-overview-inline {
   display: flex;
   justify-content: center;
   gap: 40px;
   margin-top: 30px;
 }
+
 .stat-item {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
@@ -109,14 +116,17 @@ const user = inject<Ref<UserVO | null>>("profileUser");
   gap: 6px;
   min-width: 100px;
 }
+
 .stat-value {
   font-size: 20px;
   font-weight: 700;
 }
+
 .stat-label {
   font-size: 14px;
   color: #94a3b8;
 }
+
 .text-success {
   color: #34c759;
 }

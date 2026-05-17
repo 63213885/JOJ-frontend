@@ -285,13 +285,15 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, computed, provide, reactive } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 import { useStore } from "vuex";
-import { ProfileControllerService } from "../../../../generated/services/ProfileControllerService";
-import { RelationControllerService } from "../../../../generated/services/RelationControllerService";
-import type { UserVO } from "../../../../generated/models/UserVO";
-import type { UserDetailVO } from "../../../../generated/models/UserDetailVO";
-import type { UpdateProfileDTO } from "../../../../generated/models/UpdateProfileDTO";
+import {
+  ProfileControllerService,
+  RelationControllerService,
+  UpdateProfileDTO,
+  UserDetailVO,
+  UserVO,
+} from "../../../../generated/user";
 
 const route = useRoute();
 const store = useStore();
@@ -371,6 +373,7 @@ const fetchRelationStatus = async (toUserId: number) => {
       relationStatus.value.isFollower = (res.data as any).followedBy || false;
     }
   } catch (err: any) {
+    // eslint-disable-next-line no-console
     console.error("Failed to fetch relation status:", err);
   }
 };
@@ -388,10 +391,12 @@ const toggleFollow = async () => {
       const res = await RelationControllerService.unfollowUsingPost(targetId);
       if (res.code === 0) {
         relationStatus.value.isFollowing = false;
-        user.value!.followerCount = Math.max(
-          0,
-          (user.value!.followerCount || 0) - 1
-        );
+        if (user.value) {
+          user.value.followerCount = Math.max(
+            0,
+            (user.value.followerCount || 0) - 1
+          );
+        }
       } else {
         showNotification("操作失败：" + (res as any).msg, "error");
       }
@@ -399,7 +404,9 @@ const toggleFollow = async () => {
       const res = await RelationControllerService.followUsingPost(targetId);
       if (res.code === 0) {
         relationStatus.value.isFollowing = true;
-        user.value!.followerCount = (user.value!.followerCount || 0) + 1;
+        if (user.value) {
+          user.value.followerCount = (user.value.followerCount || 0) + 1;
+        }
       } else {
         showNotification("操作失败：" + (res as any).msg, "error");
       }
@@ -436,6 +443,7 @@ const openRelationModal = async (type: "following" | "followers") => {
       relationList.value = res.data;
     }
   } catch (err: any) {
+    // eslint-disable-next-line no-console
     console.error("Failed to fetch relation list:", err);
   }
 };

@@ -61,7 +61,7 @@
 <script lang="ts">
 import { defineComponent, ref } from "vue";
 import { useRouter } from "vue-router";
-import { AuthControllerService } from "../../generated/services/AuthControllerService";
+import { AuthControllerService } from "../../generated/user";
 
 export default defineComponent({
   setup() {

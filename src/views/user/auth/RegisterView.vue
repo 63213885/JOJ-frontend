@@ -127,9 +127,11 @@
 <script lang="ts">
 import { defineComponent, ref, reactive } from "vue";
 import { useRouter } from "vue-router";
-import { AuthControllerService } from "../../../../generated/services/AuthControllerService";
-import { SendCodeRequest } from "../../../../generated";
 import scene = SendCodeRequest.scene;
+import {
+  AuthControllerService,
+  SendCodeRequest,
+} from "../../../../generated/user";
 
 export default defineComponent({
   name: "RegisterView",

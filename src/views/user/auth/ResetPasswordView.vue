@@ -129,9 +129,9 @@ import { defineComponent, ref, reactive } from "vue";
 import { useRouter } from "vue-router";
 import {
   AuthControllerService,
-  SendCodeRequest,
   PasswordResetRequest,
-} from "../../../../generated";
+  SendCodeRequest,
+} from "../../../../generated/user";
 
 export default defineComponent({
   name: "ResetPasswordView",

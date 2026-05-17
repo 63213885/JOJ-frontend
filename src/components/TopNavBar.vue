@@ -155,10 +155,10 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed, onMounted } from "vue";
+import { defineComponent, ref, computed } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { AuthControllerService } from "../../generated/services/AuthControllerService";
+import { AuthControllerService } from "../../generated/user";
 
 // 简单的 click-outside 指令，用于点击外部关闭下拉菜单
 const clickOutside = {
@@ -186,32 +186,12 @@ export default defineComponent({
     const store = useStore();
     const router = useRouter();
     const dropdownOpen = ref(false);
-    const isInitializing = ref(true); // 添加一个初始化状态
     const defaultAvatar =
       "https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png"; // Element Plus 默认头像
 
     const isLoggedIn = computed(() => store.getters.isLoggedIn);
     const currentUser = computed(() => store.getters.currentUser);
-
-    // 页面加载时自动获取一次当前用户，保持登录态
-    const fetchCurrentUser = async () => {
-      // 只有当前未登录时才请求
-      if (!isLoggedIn.value) {
-        try {
-          const res = await AuthControllerService.getLoginUserUsingGet();
-          if (res.code === 0 && res.data) {
-            store.commit("setUser", res.data);
-          }
-        } catch (err) {
-          // no action needed. user is naturally not logged in.
-        }
-      }
-      isInitializing.value = false; // 无论请求成功还是失败，此时均已初始化完毕
-    };
-
-    onMounted(() => {
-      fetchCurrentUser();
-    });
+    const isInitializing = computed(() => store.getters.isInitializing);
 
     const toggleDropdown = () => {
       dropdownOpen.value = !dropdownOpen.value;

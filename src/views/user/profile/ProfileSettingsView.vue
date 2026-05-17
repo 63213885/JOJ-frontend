@@ -53,7 +53,7 @@
 
 <script setup lang="ts">
 import { inject, reactive, Ref } from "vue";
-import type { UserDetailVO } from "../../../../generated/models/UserDetailVO";
+import { UserDetailVO } from "../../../../generated/user";
 
 const privateInfo = inject<Ref<UserDetailVO | null>>("privateInfo");
 
