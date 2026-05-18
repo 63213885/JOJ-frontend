@@ -187,13 +187,13 @@ export default defineComponent({
     const sourceInput = ref("");
 
     const formData = reactive<UpdateProblemRequest>({
-      title: "",
+      title: undefined as any,
+      samples: [],
       timeLimit: 1000,
       memoryLimit: 256,
       content: "",
       inputDesc: "",
       outputDesc: "",
-      samples: [{ input: "", output: "" }],
       source: [],
       status: 1,
       tags: [],
@@ -236,7 +236,7 @@ export default defineComponent({
             } catch (e) {
               console.warn("解析 samples 失败, 尝试处理 Java 格式", e);
               if (rawSamples.startsWith("[") && rawSamples.endsWith("]")) {
-                const regex = /\{input=(.*?), output=(.*?)\}/gi;
+                const regex = /\{input=(.*?), output=(.*?)}/gi;
                 let match;
                 const arr = [];
                 while ((match = regex.exec(rawSamples)) !== null) {
@@ -266,7 +266,7 @@ export default defineComponent({
             formData.samples = [{ input: "", output: "" }];
           }
 
-          let parsedTags = d.tags;
+          let parsedTags: any = d.tags;
           if (typeof parsedTags === "string") {
             try {
               parsedTags = JSON.parse(parsedTags);
@@ -278,7 +278,7 @@ export default defineComponent({
 
           formData.status = d.status ?? 1;
 
-          let parsedSource = d.source;
+          let parsedSource: any = d.source;
           if (typeof parsedSource === "string") {
             try {
               parsedSource = JSON.parse(parsedSource);
@@ -316,24 +316,22 @@ export default defineComponent({
       if (submitting.value) return;
 
       // Process tags
-      const currentTags = tagsInput.value
+      formData.tags = tagsInput.value
         .split(/[，,]/)
         .map((t) => t.trim())
         .filter((t) => t !== "");
-      formData.tags = currentTags;
 
       // Process source
-      const currentSource = sourceInput.value
+      formData.source = sourceInput.value
         .split(/[，,]/)
         .map((s) => s.trim())
         .filter((s) => s !== "");
-      formData.source = currentSource;
 
       submitting.value = true;
       try {
         const res = await ProblemControllerService.updateProblemUsingPut(
           problemId,
-          formData as any
+          formData as UpdateProblemRequest
         );
         if (res.code === 0) {
           triggerToast("修改成功", "success");
@@ -451,16 +449,6 @@ label {
 
 .form-input::placeholder {
   color: #475569;
-}
-
-.textarea-large {
-  min-height: 200px;
-  resize: vertical;
-}
-
-.textarea-medium {
-  min-height: 120px;
-  resize: vertical;
 }
 
 .textarea-small {
@@ -601,12 +589,12 @@ label {
   white-space: nowrap;
 }
 
-.notification-toast.type-success {
+:global(.notification-toast.type-success) {
   background: rgba(34, 197, 94, 0.9);
   box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
 }
 
-.notification-toast.type-error {
+:global(.notification-toast.type-error) {
   background: rgba(239, 68, 68, 0.9);
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }

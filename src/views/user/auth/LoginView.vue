@@ -125,7 +125,6 @@ import { useStore } from "vuex";
 import scene = SendCodeRequest.scene;
 import {
   AuthControllerService,
-  LoginRequest,
   SendCodeRequest,
 } from "../../../../generated/user";
 
@@ -159,28 +158,31 @@ export default defineComponent({
     };
 
     const form = reactive({
-      account: "",
-      password: "",
-      identifier: "",
-      code: "",
+      account: undefined as any,
+      password: undefined as any,
+      email: undefined as any,
+      phone: undefined as any,
+      code: undefined as any,
+      identifier: undefined as any,
     });
 
     const isEmail = computed(() => {
       // 简单判断是否包含@来区分邮箱和手机号
-      return form.identifier.includes("@");
+      return form.identifier?.includes("@") ?? false;
     });
 
     const sendCode = async () => {
-      if (!form.identifier) {
-        showNotification("请输入手机号或邮箱");
-        return;
-      }
-
       try {
         counting.value = true;
 
+        let identifierVal =
+          loginType.value === "phone" ? form.phone : form.email;
+        if (!identifierVal) {
+          throw new Error("请输入对应的手机号或邮箱");
+        }
+
         const res = await AuthControllerService.sendCodeUsingPost({
-          identifier: form.identifier,
+          identifier: identifierVal,
           identifierType: isEmail.value
             ? SendCodeRequest.identifierType.EMAIL
             : SendCodeRequest.identifierType.PHONE,
@@ -212,34 +214,37 @@ export default defineComponent({
     };
 
     const handleLogin = async () => {
+      if (loading.value) return;
+
+      loading.value = true;
+
       try {
-        loading.value = true;
-
-        let loginRequest: LoginRequest = {};
-
+        let payload: any;
         if (loginType.value === "account") {
-          loginRequest = {
+          payload = {
             account: form.account,
             password: form.password,
           };
         } else {
-          loginRequest = {
-            identifier: form.identifier,
+          payload = {
+            identifierType: loginType.value,
+            identifier: loginType.value === "phone" ? form.phone : form.email,
             code: form.code,
-            identifierType: isEmail.value
-              ? LoginRequest.identifierType.EMAIL
-              : LoginRequest.identifierType.PHONE,
           };
         }
 
-        const res = await AuthControllerService.loginUsingPost(loginRequest);
-
-        if (res.code !== 0) {
-          throw new Error(res.msg || "登录失败");
+        // 去除空值
+        const cleanPayload: any = {};
+        for (const [k, v] of Object.entries(payload)) {
+          if (v !== "" && v !== undefined && v !== null) {
+            cleanPayload[k] = v;
+          }
         }
 
-        // 保存用户信息到 Vuex
-        if (res.data) {
+        const res = await AuthControllerService.loginUsingPost(cleanPayload);
+
+        if (res.code === 0 && res.data) {
+          // 保存用户信息到 Vuex
           store.commit("setUser", res.data);
         }
 

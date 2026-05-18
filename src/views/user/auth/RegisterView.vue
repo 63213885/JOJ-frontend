@@ -161,12 +161,12 @@ export default defineComponent({
     };
 
     const form = reactive({
-      account: "",
-      password: "",
-      confirmPassword: "",
-      phone: "",
-      email: "",
-      code: "",
+      account: undefined as any,
+      password: undefined as any,
+      confirmPassword: undefined as any,
+      phone: undefined as any,
+      email: undefined as any,
+      code: undefined as any,
     });
 
     const sendCode = async () => {
@@ -209,15 +209,25 @@ export default defineComponent({
     const handleRegister = async () => {
       try {
         loading.value = true;
-        const res = await AuthControllerService.registerUsingPost({
+        const payload: any = {
           account: form.account,
           password: form.password,
           checkPassword: form.confirmPassword,
-          identifierType: registerType.value as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+          identifierType: registerType.value,
           identifier: registerType.value === "phone" ? form.phone : form.email,
           code: form.code,
           agreeTerms: true, // Add agree terms if needed by backend, assuming true for now
-        });
+        };
+
+        // 过滤空值
+        const cleanPayload: any = {};
+        for (const [key, value] of Object.entries(payload)) {
+          if (value !== "" && value !== undefined && value !== null) {
+            cleanPayload[key] = value;
+          }
+        }
+
+        const res = await AuthControllerService.registerUsingPost(cleanPayload);
 
         if (res.code !== 0) {
           throw new Error(res.msg || "注册失败");

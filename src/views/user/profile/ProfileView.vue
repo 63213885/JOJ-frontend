@@ -232,7 +232,7 @@
           <button class="cancel-btn modal-btn" @click="isEditing = false">
             取消
           </button>
-          <button class="save-btn modal-btn" @click="saveProfile">保存</button>
+          <button class="save-btn modal-btn" @click="submitEdit">保存</button>
         </div>
       </div>
     </div>
@@ -341,10 +341,11 @@ const isOwner = computed(() => {
 });
 
 const isEditing = ref(false);
+const submittingEdit = ref(false);
 const editForm = ref<UpdateProfileDTO>({
-  account: "",
-  bio: "",
-  school: "",
+  account: undefined as any,
+  bio: undefined as any,
+  school: undefined as any,
 });
 
 const relationStatus = ref<{ isFollowing: boolean; isFollower: boolean }>({
@@ -453,7 +454,13 @@ const closeRelationModal = () => {
 };
 
 const openEditModal = () => {
-  if (user.value) {
+  if (privateInfo.value) {
+    editForm.value = {
+      account: privateInfo.value.account,
+      bio: privateInfo.value.bio,
+      school: privateInfo.value.school,
+    };
+  } else if (user.value) {
     editForm.value = {
       account: user.value.account,
       bio: user.value.bio,
@@ -463,53 +470,30 @@ const openEditModal = () => {
   isEditing.value = true;
 };
 
-const getRankColor = (rating: number) => {
-  if (rating >= 2400) return "color-red";
-  if (rating >= 2100) return "color-orange";
-  if (rating >= 1900) return "color-purple";
-  if (rating >= 1600) return "color-blue";
-  if (rating >= 1400) return "color-cyan";
-  if (rating >= 1200) return "color-green";
-  return "color-gray";
-};
-
-const triggerAvatarUpload = () => {
-  fileInput.value?.click();
-};
-
-const onAvatarChange = async (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  if (target.files && target.files.length > 0) {
-    const file = target.files[0];
-    try {
-      const res = await ProfileControllerService.uploadAvatarUsingPut(file);
-      if (res.code === 0) {
-        fetchUserProfile(routeAccount.value);
-        showNotification("头像修改成功", "success");
-      } else {
-        showNotification("上传失败: " + (res as any).msg, "error");
-      }
-    } catch (err: any) {
-      showNotification("网络错误: " + (err.body?.msg || err.message), "error");
-    }
-    target.value = "";
-  }
-};
-
-const saveProfile = async () => {
+const submitEdit = async () => {
+  if (submittingEdit.value) return;
+  submittingEdit.value = true;
   try {
+    const payload: any = {};
+    for (const [k, v] of Object.entries(editForm.value)) {
+      if (v !== "" && v !== undefined && v !== null) {
+        payload[k] = v;
+      }
+    }
     const res = await ProfileControllerService.updateProfileUsingPut(
-      editForm.value
+      payload as UpdateProfileDTO
     );
     if (res.code === 0) {
+      showNotification("资料已更新", "success");
+      await fetchUserProfile(user.value?.account || "");
       isEditing.value = false;
-      fetchUserProfile(editForm.value.account || routeAccount.value);
-      showNotification("修改成功", "success");
     } else {
       showNotification("更新失败: " + (res as any).msg, "error");
     }
   } catch (err: any) {
     showNotification("网络错误: " + (err.body?.msg || err.message), "error");
+  } finally {
+    submittingEdit.value = false;
   }
 };
 

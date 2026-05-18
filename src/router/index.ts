@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
 import HomeView from "../views/HomeView.vue";
+import store from "../store";
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -31,6 +32,7 @@ const routes: Array<RouteRecordRaw> = [
     path: "/problem/create",
     name: "problemCreate",
     component: () => import("../views/problem/ProblemCreateView.vue"),
+    meta: { requireAdmin: true },
   },
   {
     path: "/problem/edit/:id",
@@ -76,11 +78,45 @@ const routes: Array<RouteRecordRaw> = [
       },
     ],
   },
+  {
+    path: "/user/list",
+    name: "userList",
+    component: () => import("../views/user/UserListView.vue"),
+  },
+  {
+    path: "/user/create",
+    name: "userCreate",
+    component: () => import("../views/user/UserCreateView.vue"),
+    meta: { requireAdmin: true },
+  },
+  {
+    path: "/no-auth",
+    name: "noAuth",
+    component: () => import("../views/error/NoAuthView.vue"),
+  },
+  {
+    path: "/:pathMatch(.*)*",
+    name: "notFound",
+    component: () => import("../views/error/NotFoundView.vue"),
+  },
 ];
 
 const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
   routes,
+});
+
+router.beforeEach((to, from, next) => {
+  if (to.meta.requireAdmin) {
+    const user = store.getters.currentUser;
+    if (user && (user.role === "admin" || user.role === "ADMIN")) {
+      next();
+    } else {
+      next("/no-auth");
+    }
+  } else {
+    next();
+  }
 });
 
 export default router;

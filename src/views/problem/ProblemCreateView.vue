@@ -184,16 +184,16 @@ export default defineComponent({
     const sourceInput = ref("");
 
     const formData = reactive<CreateProblemRequest>({
-      title: "",
-      timeLimit: 1000,
-      memoryLimit: 256,
+      title: undefined as any,
       content: "",
       inputDesc: "",
       outputDesc: "",
-      tags: [],
+      samples: [],
+      timeLimit: 1000,
+      memoryLimit: 256,
+      status: 1,
       source: [],
-      samples: [{ input: "", output: "" }],
-      status: 0,
+      tags: [],
     });
 
     const showToast = ref(false);
@@ -225,25 +225,19 @@ export default defineComponent({
 
     const handleSubmit = async () => {
       if (submitting.value) return;
-
-      // Process tags
-      const currentTags = tagsInput.value
-        .split(/[，,]/)
-        .map((t) => t.trim())
-        .filter((t) => t !== "");
-      formData.tags = currentTags;
-
-      // Process source
-      const currentSource = sourceInput.value
-        .split(/[，,]/)
-        .map((s) => s.trim())
-        .filter((s) => s !== "");
-      formData.source = currentSource;
-
       submitting.value = true;
+
+      // 提取纯净数据
+      const payload: any = {};
+      for (const [k, v] of Object.entries(formData)) {
+        if (v !== "" && v !== undefined && v !== null) {
+          payload[k] = v;
+        }
+      }
+
       try {
         const res = await ProblemControllerService.createProblemUsingPost(
-          formData as any
+          payload as CreateProblemRequest
         );
         if (res.code === 0) {
           triggerToast("题目创建成功", "success");
@@ -511,12 +505,12 @@ label {
   white-space: nowrap;
 }
 
-.notification-toast.type-success {
+:global(.notification-toast.type-success) {
   background: rgba(34, 197, 94, 0.9);
   box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
 }
 
-.notification-toast.type-error {
+:global(.notification-toast.type-error) {
   background: rgba(239, 68, 68, 0.9);
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
