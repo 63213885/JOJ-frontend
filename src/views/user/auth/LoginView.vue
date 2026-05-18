@@ -243,7 +243,11 @@ export default defineComponent({
 
         const res = await AuthControllerService.loginUsingPost(cleanPayload);
 
-        if (res.code === 0 && res.data) {
+        if (res.code !== 0) {
+          throw new Error(res.msg || "登录失败");
+        }
+
+        if (res.data) {
           // 保存用户信息到 Vuex
           store.commit("setUser", res.data);
         }

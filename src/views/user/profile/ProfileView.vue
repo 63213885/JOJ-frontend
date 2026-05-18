@@ -255,8 +255,14 @@
             class="relation-item"
             v-for="relUser in relationList"
             :key="relUser.id"
+            @click="goToProfile(relUser.account)"
+            style="cursor: pointer"
           >
-            <img :src="relUser.avatarUrl || defaultAvatar" class="rel-avatar" />
+            <img
+              :src="relUser.avatarUrl || defaultAvatar"
+              alt="Avatar"
+              class="rel-avatar"
+            />
             <div class="rel-info">
               <div
                 class="rel-name"
@@ -269,6 +275,42 @@
           </div>
         </div>
         <div class="relation-empty" v-else>暂无数据</div>
+        <div class="relation-pagination" v-if="relationTotal > 0">
+          <button
+            :disabled="relationCurrent === 1"
+            @click="changeRelationPage(1)"
+          >
+            首页
+          </button>
+          <button
+            :disabled="relationCurrent === 1"
+            @click="changeRelationPage(relationCurrent - 1)"
+          >
+            上一页
+          </button>
+
+          <button
+            v-for="page in paginationPages"
+            :key="page"
+            :class="{ active: relationCurrent === page }"
+            @click="changeRelationPage(page)"
+          >
+            {{ page }}
+          </button>
+
+          <button
+            :disabled="relationCurrent >= relationTotalPages"
+            @click="changeRelationPage(relationCurrent + 1)"
+          >
+            下一页
+          </button>
+          <button
+            :disabled="relationCurrent >= relationTotalPages"
+            @click="changeRelationPage(relationTotalPages)"
+          >
+            末页
+          </button>
+        </div>
       </div>
     </div>
 
@@ -307,7 +349,30 @@ const loading = ref(true);
 const error = ref("");
 const defaultAvatar = "https://picsum.photos/200";
 
+const getRankColor = (rating: number) => {
+  if (rating >= 2400) return "color-red";
+  if (rating >= 2100) return "color-orange";
+  if (rating >= 1900) return "color-purple";
+  if (rating >= 1600) return "color-blue";
+  if (rating >= 1400) return "color-cyan";
+  if (rating >= 1200) return "color-green";
+  return "color-gray";
+};
+
 const fileInput = ref<HTMLInputElement | null>(null);
+
+const triggerAvatarUpload = () => {
+  if (fileInput.value) {
+    fileInput.value.click();
+  }
+};
+
+const onAvatarChange = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (target.files && target.files.length > 0) {
+    showNotification("头像上传功能开发中", "info");
+  }
+};
 
 const notification = reactive({
   show: false,
@@ -427,26 +492,79 @@ const handleMessage = () => {
 const showRelationModal = ref(false);
 const relationModalType = ref<"following" | "followers">("followers");
 const relationList = ref<UserVO[]>([]);
+const relationCurrent = ref(1);
+const relationTotal = ref(0);
 
-const openRelationModal = async (type: "following" | "followers") => {
+const relationTotalPages = computed(() => Math.ceil(relationTotal.value / 10));
+
+const paginationPages = computed(() => {
+  const pages = [];
+  const total = relationTotalPages.value;
+  const current = relationCurrent.value;
+  const maxPagesToShow = 5;
+
+  let start = Math.max(1, current - 2);
+  let end = Math.min(total, start + maxPagesToShow - 1);
+
+  if (end - start + 1 < maxPagesToShow) {
+    start = Math.max(1, end - maxPagesToShow + 1);
+  }
+
+  for (let i = start; i <= end; i++) {
+    pages.push(i);
+  }
+  return pages;
+});
+
+import { useRouter } from "vue-router";
+
+const router = useRouter();
+
+const goToProfile = (account?: string) => {
+  if (account) {
+    showRelationModal.value = false;
+    router.push(`/profile/${account}`);
+  }
+};
+
+const openRelationModal = async (type: "following" | "followers", page = 1) => {
   showRelationModal.value = true;
   relationModalType.value = type;
+  relationCurrent.value = page;
   relationList.value = [];
   const targetId = user.value?.id ? Number(user.value.id) : undefined;
+  if (!targetId) return;
   try {
     let res;
     if (type === "followers") {
-      res = await RelationControllerService.followersUsingGet(50, 0, targetId);
+      res = await RelationControllerService.followersUsingGet(
+        targetId,
+        page,
+        10,
+        "update_time",
+        "descend"
+      );
     } else {
-      res = await RelationControllerService.followingUsingGet(50, 0, targetId);
+      res = await RelationControllerService.followingUsingGet(
+        targetId,
+        page,
+        10,
+        "update_time",
+        "descend"
+      );
     }
     if (res.code === 0 && res.data) {
-      relationList.value = res.data;
+      relationList.value = res.data.records || [];
+      relationTotal.value = res.data.total || 0;
     }
   } catch (err: any) {
     // eslint-disable-next-line no-console
     console.error("Failed to fetch relation list:", err);
   }
+};
+
+const changeRelationPage = (page: number) => {
+  openRelationModal(relationModalType.value, page);
 };
 
 const closeRelationModal = () => {
@@ -706,11 +824,6 @@ watch(
   min-height: 60px;
 }
 
-.edit-actions {
-  display: flex;
-  gap: 8px;
-}
-
 .save-btn,
 .cancel-btn {
   padding: 4px 12px;
@@ -921,34 +1034,6 @@ watch(
   min-height: 500px;
 }
 
-.color-red {
-  color: #ff453a !important;
-}
-
-.color-orange {
-  color: #ff9f0a !important;
-}
-
-.color-purple {
-  color: #bf5af2 !important;
-}
-
-.color-blue {
-  color: #0a84ff !important;
-}
-
-.color-cyan {
-  color: #64d2ff !important;
-}
-
-.color-green {
-  color: #30d158 !important;
-}
-
-.color-gray {
-  color: #98989d !important;
-}
-
 .loading,
 .error {
   text-align: center;
@@ -1100,6 +1185,38 @@ watch(
   font-size: 14px;
 }
 
+.relation-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.relation-pagination button {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid #334155;
+  color: #f8fafc;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.relation-pagination button.active {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
+}
+
+.relation-pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Notification Toast */
 .notification-toast {
   position: fixed;
@@ -1114,21 +1231,6 @@ watch(
   z-index: 10000;
   animation: slideDownToast 0.3s ease;
   white-space: nowrap;
-}
-
-.notification-toast.type-success {
-  background: rgba(34, 197, 94, 0.9);
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
-}
-
-.notification-toast.type-error {
-  background: rgba(239, 68, 68, 0.9);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-}
-
-.notification-toast.type-info {
-  background: rgba(59, 130, 246, 0.9);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 @keyframes slideDownToast {

@@ -15,7 +15,6 @@ export type { PageResponse_UserVO_ } from './models/PageResponse_UserVO_';
 export { PasswordResetRequest } from './models/PasswordResetRequest';
 export { RegisterRequest } from './models/RegisterRequest';
 export type { Result_boolean_ } from './models/Result_boolean_';
-export type { Result_List_UserVO_ } from './models/Result_List_UserVO_';
 export type { Result_LoginUserVO_ } from './models/Result_LoginUserVO_';
 export type { Result_long_ } from './models/Result_long_';
 export type { Result_Map_string_boolean_ } from './models/Result_Map_string_boolean_';

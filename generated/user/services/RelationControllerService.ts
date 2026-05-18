@@ -3,8 +3,8 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { Result_boolean_ } from '../models/Result_boolean_';
-import type { Result_List_UserVO_ } from '../models/Result_List_UserVO_';
 import type { Result_Map_string_boolean_ } from '../models/Result_Map_string_boolean_';
+import type { Result_PageResponse_UserVO_ } from '../models/Result_PageResponse_UserVO_';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -34,23 +34,29 @@ export class RelationControllerService {
     }
     /**
      * followers
-     * @param limit limit
-     * @param offset offset
      * @param userId userId
-     * @returns Result_List_UserVO_ OK
+     * @param current
+     * @param pageSize
+     * @param sortField
+     * @param sortOrder
+     * @returns Result_PageResponse_UserVO_ OK
      * @throws ApiError
      */
     public static followersUsingGet(
-        limit: number = 20,
-        offset?: number,
-        userId?: number,
-    ): CancelablePromise<Result_List_UserVO_> {
+        userId: number,
+        current?: number,
+        pageSize?: number,
+        sortField?: string,
+        sortOrder?: string,
+    ): CancelablePromise<Result_PageResponse_UserVO_> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/relation/followers',
             query: {
-                'limit': limit,
-                'offset': offset,
+                'current': current,
+                'pageSize': pageSize,
+                'sortField': sortField,
+                'sortOrder': sortOrder,
                 'userId': userId,
             },
             errors: {
@@ -62,23 +68,29 @@ export class RelationControllerService {
     }
     /**
      * following
-     * @param limit limit
-     * @param offset offset
      * @param userId userId
-     * @returns Result_List_UserVO_ OK
+     * @param current
+     * @param pageSize
+     * @param sortField
+     * @param sortOrder
+     * @returns Result_PageResponse_UserVO_ OK
      * @throws ApiError
      */
     public static followingUsingGet(
-        limit: number = 20,
-        offset?: number,
-        userId?: number,
-    ): CancelablePromise<Result_List_UserVO_> {
+        userId: number,
+        current?: number,
+        pageSize?: number,
+        sortField?: string,
+        sortOrder?: string,
+    ): CancelablePromise<Result_PageResponse_UserVO_> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/relation/following',
             query: {
-                'limit': limit,
-                'offset': offset,
+                'current': current,
+                'pageSize': pageSize,
+                'sortField': sortField,
+                'sortOrder': sortOrder,
                 'userId': userId,
             },
             errors: {
