@@ -3,8 +3,8 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { CreateProblemRequest } from '../models/CreateProblemRequest';
-import type { Result_List_ProblemVO_ } from '../models/Result_List_ProblemVO_';
 import type { Result_long_ } from '../models/Result_long_';
+import type { Result_PageResponse_ProblemVO_ } from '../models/Result_PageResponse_ProblemVO_';
 import type { Result_ProblemVO_ } from '../models/Result_ProblemVO_';
 import type { Result_Void_ } from '../models/Result_Void_';
 import type { UpdateProblemRequest } from '../models/UpdateProblemRequest';
@@ -35,21 +35,27 @@ export class ProblemControllerService {
     }
     /**
      * getProblemList
-     * @param limit limit
-     * @param offset offset
-     * @returns Result_List_ProblemVO_ OK
+     * @param current
+     * @param pageSize
+     * @param sortField
+     * @param sortOrder
+     * @returns Result_PageResponse_ProblemVO_ OK
      * @throws ApiError
      */
     public static getProblemListUsingGet(
-        limit: number = 50,
-        offset?: number,
-    ): CancelablePromise<Result_List_ProblemVO_> {
+        current?: number,
+        pageSize?: number,
+        sortField?: string,
+        sortOrder?: string,
+    ): CancelablePromise<Result_PageResponse_ProblemVO_> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/problem/list',
             query: {
-                'limit': limit,
-                'offset': offset,
+                'current': current,
+                'pageSize': pageSize,
+                'sortField': sortField,
+                'sortOrder': sortOrder,
             },
             errors: {
                 401: `Unauthorized`,

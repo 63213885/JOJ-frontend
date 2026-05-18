@@ -78,6 +78,54 @@
           </tr>
         </tbody>
       </table>
+
+      <div v-if="!loading && total > 0" class="pagination-wrapper">
+        <div class="pagination-container">
+          <button
+            :disabled="current <= 1"
+            @click="goToPage(1)"
+            class="btn-page btn-nav"
+          >
+            首页
+          </button>
+          <button
+            :disabled="current <= 1"
+            @click="goToPage(current - 1)"
+            class="btn-page btn-nav"
+          >
+            上一页
+          </button>
+
+          <div class="page-numbers">
+            <button
+              v-for="page in visiblePages"
+              :key="page"
+              :class="['btn-page', { active: page === current }]"
+              @click="goToPage(page)"
+            >
+              {{ page }}
+            </button>
+          </div>
+
+          <button
+            :disabled="current >= totalPages"
+            @click="goToPage(current + 1)"
+            class="btn-page btn-nav"
+          >
+            下一页
+          </button>
+          <button
+            :disabled="current >= totalPages"
+            @click="goToPage(totalPages)"
+            class="btn-page btn-nav"
+          >
+            末页
+          </button>
+        </div>
+        <div class="pagination-info">
+          共 {{ total }} 行数据 / 共 {{ totalPages }} 页
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -99,6 +147,9 @@ export default defineComponent({
     const problems = ref<ProblemVO[]>([]);
     const loading = ref(true);
     const showAllTags = ref(false);
+    const current = ref(1);
+    const total = ref(0);
+    const pageSize = 50;
 
     const toggleAllTags = () => {
       showAllTags.value = !showAllTags.value;
@@ -111,15 +162,48 @@ export default defineComponent({
       return role === "admin" || role === "ADMIN";
     });
 
+    const totalPages = computed(() => Math.ceil(total.value / pageSize));
+
+    const visiblePages = computed(() => {
+      const currentVal = current.value;
+      const totalVal = totalPages.value;
+      const pages = [];
+      let start = Math.max(1, currentVal - 2);
+      let end = Math.min(totalVal, currentVal + 2);
+
+      if (end - start + 1 < 5) {
+        if (start === 1) {
+          end = Math.min(totalVal, start + 4);
+        } else if (end === totalVal) {
+          start = Math.max(1, end - 4);
+        }
+      }
+
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+      return pages;
+    });
+
+    const goToPage = (page: number) => {
+      if (page >= 1 && page <= totalPages.value && page !== current.value) {
+        current.value = page;
+        loadData();
+      }
+    };
+
     const loadData = async () => {
       loading.value = true;
       try {
         const res = await ProblemControllerService.getProblemListUsingGet(
-          50,
-          0
+          current.value,
+          pageSize,
+          "id",
+          "descend"
         );
         if (res.code === 0 && res.data) {
-          problems.value = res.data;
+          problems.value = res.data.records || [];
+          total.value = res.data.total ? Number(res.data.total) : 0;
         }
       } catch (err) {
         console.error("获取题目列表失败:", err);
@@ -152,6 +236,12 @@ export default defineComponent({
       isAdmin,
       problems,
       loading,
+      current,
+      total,
+      pageSize,
+      totalPages,
+      visiblePages,
+      goToPage,
       getPassRate,
       doProblem,
       editProblem,
@@ -374,5 +464,72 @@ export default defineComponent({
 .btn-modify:hover {
   background: #f59e0b;
   color: #ffffff;
+}
+
+.pagination-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.pagination-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-numbers {
+  display: flex;
+  gap: 6px;
+  margin: 0 8px;
+}
+
+.btn-page {
+  background: rgba(15, 23, 42, 0.6);
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  min-width: 36px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-page:hover:not(:disabled) {
+  border-color: #3b82f6;
+  color: #f8fafc;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.btn-page.active {
+  background: #3b82f6;
+  color: #ffffff;
+  border-color: #3b82f6;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.btn-page:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: rgba(15, 23, 42, 0.4);
+}
+
+.btn-nav {
+  padding: 0 16px;
+}
+
+.pagination-info {
+  color: #64748b;
+  font-size: 0.85rem;
 }
 </style>

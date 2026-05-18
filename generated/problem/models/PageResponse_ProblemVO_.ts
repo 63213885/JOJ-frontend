@@ -3,9 +3,8 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { ProblemVO } from './ProblemVO';
-export type Result_List_ProblemVO_ = {
-    code?: number;
-    data?: Array<ProblemVO>;
-    msg?: string;
+export type PageResponse_ProblemVO_ = {
+    records?: Array<ProblemVO>;
+    total?: number;
 };
 
