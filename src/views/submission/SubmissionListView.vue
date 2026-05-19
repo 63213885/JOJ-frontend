@@ -1,156 +1,154 @@
 <template>
-  <div class="profile-body-wrapper">
-    <div class="card">
-      <div class="card-header">
-        <h3 class="card-title">{{ title }}</h3>
+  <div class="submission-list-wrapper">
+    <section class="page-header">
+      <div class="header-content">
+        <div>
+          <h1 class="page-title">全部提交</h1>
+          <p class="page-subtitle">查看平台所有提交记录</p>
+        </div>
       </div>
-      <div class="card-body">
-        <div class="list-container">
-          <div v-if="loading" class="loading-state">加载中...</div>
-          <div v-else-if="submissions.length === 0" class="empty-state">
-            暂无提交数据
+    </section>
+
+    <div class="list-container">
+      <div v-if="loading" class="loading-state">加载中...</div>
+      <div v-else-if="submissions.length === 0" class="empty-state">
+        暂无提交数据
+      </div>
+      <table v-else class="submission-table">
+        <thead>
+          <tr>
+            <th class="col-id">ID</th>
+            <th class="col-user">用户</th>
+            <th class="col-problem">题目</th>
+            <th class="col-status">状态</th>
+            <th class="col-score">得分</th>
+            <th class="col-time">耗时</th>
+            <th class="col-memory">内存</th>
+            <th class="col-language">语言</th>
+            <th class="col-submit-time">提交时间</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="sub in submissions" :key="sub.id" class="submission-row">
+            <td class="col-id">
+              <span
+                class="link-text actionable"
+                @click="openSubmissionDetail(sub)"
+              >
+                {{ sub.id }}
+              </span>
+            </td>
+            <td class="col-user">
+              <router-link
+                :to="`/profile/${sub.user?.account}`"
+                class="link-text"
+                v-if="sub.user?.account"
+              >
+                {{ sub.user.account }}
+              </router-link>
+              <span v-else>-</span>
+            </td>
+            <td class="col-problem">
+              <router-link
+                :to="`/problem/${sub.problem?.id}`"
+                class="link-text"
+                v-if="sub.problem?.id"
+              >
+                {{ sub.problem.id }} - {{ sub.problem.title || "未知题目" }}
+              </router-link>
+              <span v-else>-</span>
+            </td>
+            <td class="col-status">
+              <span
+                :class="[
+                  'status-badge',
+                  getStatusClass(sub.status),
+                  'actionable',
+                ]"
+                @click="openSubmissionDetail(sub)"
+              >
+                {{ sub.status || "Unknown" }}
+              </span>
+            </td>
+            <td class="col-score">
+              <span class="actionable" @click="openSubmissionDetail(sub)">
+                {{ sub.score ?? 0 }}
+              </span>
+            </td>
+            <td class="col-time">
+              {{
+                sub.timeUsed !== undefined && sub.timeUsed !== null
+                  ? sub.timeUsed + " ms"
+                  : "-"
+              }}
+            </td>
+            <td class="col-memory">
+              {{
+                sub.memoryUsed !== undefined && sub.memoryUsed !== null
+                  ? Math.round(sub.memoryUsed / 1024) + " MB"
+                  : "-"
+              }}
+            </td>
+            <td class="col-language">{{ sub.language || "-" }}</td>
+            <td class="col-submit-time">
+              <span class="actionable" @click="openSubmissionDetail(sub)">
+                {{ formatDate(sub.submitTime) }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div v-if="!loading" class="pagination-wrapper">
+        <div class="pagination-container">
+          <button
+            :disabled="current <= 1"
+            @click="goToPage(1)"
+            class="btn-page btn-nav"
+            v-if="total > 0"
+          >
+            首页
+          </button>
+          <button
+            :disabled="current <= 1"
+            @click="goToPage(current - 1)"
+            class="btn-page btn-nav"
+          >
+            上一页
+          </button>
+
+          <div class="page-numbers">
+            <button
+              v-for="page in visiblePages"
+              :key="page"
+              :class="['btn-page', { active: page === current }]"
+              @click="goToPage(page)"
+            >
+              {{ page }}
+            </button>
           </div>
-          <table v-else class="submission-table">
-            <thead>
-              <tr>
-                <th class="col-id">ID</th>
-                <th class="col-user">用户</th>
-                <th class="col-problem">题目</th>
-                <th class="col-status">状态</th>
-                <th class="col-score">得分</th>
-                <th class="col-time">耗时</th>
-                <th class="col-memory">内存</th>
-                <th class="col-language">语言</th>
-                <th class="col-submit-time">提交时间</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="sub in submissions"
-                :key="sub.id"
-                class="submission-row"
-              >
-                <td class="col-id">
-                  <span
-                    class="link-text actionable"
-                    @click="openSubmissionDetail(sub)"
-                  >
-                    {{ sub.id }}
-                  </span>
-                </td>
-                <td class="col-user">
-                  <router-link
-                    :to="`/profile/${sub.user?.account}`"
-                    class="link-text"
-                    v-if="sub.user?.account"
-                  >
-                    {{ sub.user.account }}
-                  </router-link>
-                  <span v-else>-</span>
-                </td>
-                <td class="col-problem">
-                  <router-link
-                    :to="`/problem/${sub.problem?.id}`"
-                    class="link-text"
-                    v-if="sub.problem?.id"
-                  >
-                    {{ sub.problem.id }} - {{ sub.problem.title || "未知题目" }}
-                  </router-link>
-                  <span v-else>-</span>
-                </td>
-                <td class="col-status">
-                  <span
-                    :class="[
-                      'status-badge',
-                      getStatusClass(sub.status),
-                      'actionable',
-                    ]"
-                    @click="openSubmissionDetail(sub)"
-                  >
-                    {{ sub.status || "Unknown" }}
-                  </span>
-                </td>
-                <td class="col-score">
-                  <span class="actionable" @click="openSubmissionDetail(sub)">
-                    {{ sub.score ?? 0 }}
-                  </span>
-                </td>
-                <td class="col-time">
-                  {{
-                    sub.timeUsed !== undefined && sub.timeUsed !== null
-                      ? sub.timeUsed + " ms"
-                      : "-"
-                  }}
-                </td>
-                <td class="col-memory">
-                  {{
-                    sub.memoryUsed !== undefined && sub.memoryUsed !== null
-                      ? Math.round(sub.memoryUsed / 1024) + " MB"
-                      : "-"
-                  }}
-                </td>
-                <td class="col-language">{{ sub.language || "-" }}</td>
-                <td class="col-submit-time">
-                  <span class="actionable" @click="openSubmissionDetail(sub)">
-                    {{ formatDate(sub.submitTime) }}
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
 
-          <div v-if="!loading" class="pagination-wrapper">
-            <div class="pagination-container">
-              <button
-                :disabled="current <= 1"
-                @click="goToPage(1)"
-                class="btn-page btn-nav"
-                v-if="total > 0"
-              >
-                首页
-              </button>
-              <button
-                :disabled="current <= 1"
-                @click="goToPage(current - 1)"
-                class="btn-page btn-nav"
-              >
-                上一页
-              </button>
-
-              <div class="page-numbers">
-                <button
-                  v-for="page in visiblePages"
-                  :key="page"
-                  :class="['btn-page', { active: page === current }]"
-                  @click="goToPage(page)"
-                >
-                  {{ page }}
-                </button>
-              </div>
-
-              <button
-                :disabled="current >= totalPages"
-                @click="goToPage(current + 1)"
-                class="btn-page btn-nav"
-              >
-                下一页
-              </button>
-              <button
-                :disabled="current >= totalPages"
-                @click="goToPage(totalPages)"
-                class="btn-page btn-nav"
-                v-if="total > 0"
-              >
-                末页
-              </button>
-            </div>
-            <div class="pagination-info">
-              <span v-if="total > 0"
-                >共 {{ total }} 行数据 / 共 {{ totalPages }} 页</span
-              >
-              <span v-else>第 {{ current }} 页</span>
-            </div>
-          </div>
+          <button
+            :disabled="current >= totalPages"
+            @click="goToPage(current + 1)"
+            class="btn-page btn-nav"
+          >
+            下一页
+          </button>
+          <button
+            :disabled="current >= totalPages"
+            @click="goToPage(totalPages)"
+            class="btn-page btn-nav"
+            v-if="total > 0"
+          >
+            末页
+          </button>
+        </div>
+        <div class="pagination-info">
+          <span v-if="total > 0"
+            >共 {{ total }} 行数据 / 共 {{ totalPages }} 页</span
+          >
+          <span v-else>第 {{ current }} 页</span>
         </div>
       </div>
     </div>
@@ -164,43 +162,26 @@
 </template>
 
 <script lang="ts">
-import {
-  defineComponent,
-  ref,
-  onMounted,
-  inject,
-  Ref,
-  computed,
-  watch,
-} from "vue";
-import { useStore } from "vuex";
-import { SubmissionControllerService } from "../../../../generated/problem/services/SubmissionControllerService";
-import type { SubmissionVO } from "../../../../generated/problem/models/SubmissionVO";
-import type { UserVO } from "../../../../generated/user/models/UserVO";
-import SubmissionDetailModal from "../../../components/SubmissionDetailModal.vue";
+import { defineComponent, ref, onMounted, computed } from "vue";
+import { SubmissionControllerService } from "../../../generated/problem/services/SubmissionControllerService";
+import type { SubmissionVO } from "../../../generated/problem/models/SubmissionVO";
+import SubmissionDetailModal from "../../components/SubmissionDetailModal.vue";
 
 export default defineComponent({
-  name: "ProfileSubmissionsView",
+  name: "SubmissionListView",
   components: {
     SubmissionDetailModal,
   },
   setup() {
-    const store = useStore();
-    const profileUser = inject<Ref<UserVO | null>>("profileUser");
     const submissions = ref<SubmissionVO[]>([]);
     const loading = ref(true);
     const current = ref(1);
-    const pageSize = 10;
     const total = ref(0);
+    const pageSize = 50;
     const hasNextPage = ref(false);
 
-    const isOwner = computed(() => {
-      return store.state.user?.account === profileUser?.value?.account;
-    });
-
-    const title = computed(() => {
-      return isOwner.value ? "我的提交" : "他的提交";
-    });
+    const modalVisible = ref(false);
+    const selectedSubmission = ref<SubmissionVO | null>(null);
 
     const totalPages = computed(() => {
       if (total.value > 0) return Math.ceil(total.value / pageSize);
@@ -228,11 +209,7 @@ export default defineComponent({
       return pages;
     });
 
-    const modalVisible = ref(false);
-    const selectedSubmission = ref<SubmissionVO | null>(null);
-
     const loadData = async () => {
-      if (!profileUser?.value?.id) return;
       loading.value = true;
       try {
         const res = await SubmissionControllerService.listSubmissionsUsingGet(
@@ -244,7 +221,7 @@ export default defineComponent({
           "id", // sortField
           "descend", // sortOrder
           undefined, // status
-          profileUser.value.id // userId
+          undefined // userId
         );
         if (res.code === 0 && res.data) {
           submissions.value = res.data.records || [];
@@ -266,20 +243,8 @@ export default defineComponent({
     };
 
     onMounted(() => {
-      if (profileUser?.value?.id) {
-        loadData();
-      }
+      loadData();
     });
-
-    watch(
-      () => profileUser?.value?.id,
-      (newId) => {
-        if (newId) {
-          current.value = 1;
-          loadData();
-        }
-      }
-    );
 
     const getStatusClass = (status?: string) => {
       if (!status) return "default";
@@ -322,7 +287,6 @@ export default defineComponent({
       visiblePages,
       modalVisible,
       selectedSubmission,
-      title,
       goToPage,
       getStatusClass,
       formatDate,
@@ -333,42 +297,40 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.profile-body-wrapper {
-  max-width: 1300px;
-  margin: 0 auto;
-  padding: 20px 40px 60px;
-  display: flex;
-  flex-direction: column;
-  gap: 40px;
-}
-
-.card {
-  background: transparent;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-}
-
-.card-title {
-  font-size: 20px;
-  font-weight: 600;
-  text-align: center;
-  margin-bottom: 20px;
+.submission-list-wrapper {
+  min-height: calc(100vh - 64px);
+  background-color: #0f172a;
+  padding: 40px 20px;
   color: #f8fafc;
 }
 
-.card-body {
-  width: 100%;
+.page-header {
+  max-width: 1200px;
+  margin: 0 auto 30px;
+  text-align: center;
+}
+
+.header-content {
   display: flex;
-  flex-direction: column;
+  justify-content: center;
   align-items: center;
 }
 
+.page-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #f8fafc;
+  margin-bottom: 8px;
+}
+
+.page-subtitle {
+  color: #94a3b8;
+  font-size: 1rem;
+}
+
 .list-container {
-  width: 100%;
   max-width: 1200px;
-  margin: 15px auto 0;
+  margin: 0 auto;
   background: rgba(30, 41, 59, 0.4);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.05);

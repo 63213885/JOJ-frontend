@@ -2,7 +2,7 @@
   <div class="user-list-wrapper">
     <section class="page-header">
       <div class="header-content">
-        <div>
+        <div class="header-title-group">
           <h1 class="page-title">全部用户</h1>
           <p class="page-subtitle">查看和管理平台用户</p>
         </div>
@@ -225,13 +225,25 @@ export default defineComponent({
 .page-header {
   max-width: 1200px;
   margin: 0 auto 30px;
-  text-align: left;
+  text-align: center;
 }
 
 .header-content {
+  position: relative;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  justify-content: center;
+  align-items: center;
+}
+
+.header-title-group {
+  text-align: center;
+}
+
+.header-actions {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .page-title {

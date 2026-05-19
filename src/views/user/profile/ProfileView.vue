@@ -159,28 +159,28 @@
               class="tab-item"
               :class="{ active: $route.name === 'userProfile' }"
             >
-              我的主页
+              {{ isOwner ? "我的主页" : "他的主页" }}
             </router-link>
             <router-link
-              :to="`/courses/${routeAccount}`"
+              :to="`/profile/${routeAccount}/courses`"
               class="tab-item"
               :class="{ active: $route.name === 'userCourses' }"
             >
-              我的课程
+              {{ isOwner ? "我的课程" : "他的课程" }}
             </router-link>
             <router-link
-              :to="`/submissions/${routeAccount}`"
+              :to="`/profile/${routeAccount}/submissions`"
               class="tab-item"
               :class="{ active: $route.name === 'userSubmissions' }"
             >
-              我的提交
+              {{ isOwner ? "我的提交" : "他的提交" }}
             </router-link>
             <router-link
-              :to="`/contests/with/${routeAccount}`"
+              :to="`/profile/${routeAccount}/contests`"
               class="tab-item"
               :class="{ active: $route.name === 'userContests' }"
             >
-              我的比赛
+              {{ isOwner ? "我的比赛" : "他的比赛" }}
             </router-link>
             <router-link
               v-if="isOwner"
@@ -424,7 +424,7 @@ const relationDisplayContent = computed(() => {
   if (relationStatus.value.isFollowing && relationStatus.value.isFollower) {
     return isHoveringRelBtn.value ? "取消关注" : "互相关注";
   } else if (relationStatus.value.isFollowing) {
-    return isHoveringRelBtn.value ? "取消关注" : "已关注";
+    return isHoveringRelBtn.value ? "取消关注" : "已���注";
   }
   return "+关注";
 });

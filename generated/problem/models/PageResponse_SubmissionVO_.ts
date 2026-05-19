@@ -3,9 +3,8 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { SubmissionVO } from './SubmissionVO';
-export type Result_List_SubmissionVO_ = {
-    code?: number;
-    data?: Array<SubmissionVO>;
-    msg?: string;
+export type PageResponse_SubmissionVO_ = {
+    records?: Array<SubmissionVO>;
+    total?: number;
 };
 

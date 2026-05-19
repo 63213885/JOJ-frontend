@@ -3,12 +3,25 @@
     <div class="modal-content custom-scroll" @click.stop>
       <div class="modal-header">
         <h3 class="modal-title">
-          #{{ submission?.id }} | {{ submission?.user?.account || "User" }}'s
-          solution for [{{
-            problemTitle || submission?.problem?.title || "Problem"
-          }}]
+          #{{ submission?.id || submissionId }} |
+          <router-link
+            :to="`/profile/${submission?.user?.account || ''}`"
+            class="header-link"
+            @click="close"
+          >
+            {{ submission?.user?.account || "User" }}
+          </router-link>
+          's solution for [
+          <router-link
+            :to="`/problem/${submission?.problem?.id || ''}`"
+            class="header-link"
+            @click="close"
+          >
+            {{ problemTitle || submission?.problem?.title || "Problem" }}
+          </router-link>
+          ]
         </h3>
-        <button class="btn-close" @click="close">×</button>
+        <button class="btn-close" @click="close"></button>
       </div>
       <div class="modal-body custom-scroll" v-if="submission">
         <!-- 第2部分：详情 -->
@@ -243,6 +256,17 @@ export default defineComponent({
   font-size: 16px;
   font-weight: 500;
   color: #cbd5e1;
+}
+
+.header-link {
+  color: #3b82f6;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.header-link:hover {
+  color: #60a5fa;
 }
 
 .btn-close {

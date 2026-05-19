@@ -4,8 +4,8 @@
 /* eslint-disable */
 import type { Result_boolean_ } from '../models/Result_boolean_';
 import type { Result_List_string_ } from '../models/Result_List_string_';
-import type { Result_List_SubmissionVO_ } from '../models/Result_List_SubmissionVO_';
 import type { Result_long_ } from '../models/Result_long_';
+import type { Result_PageResponse_SubmissionVO_ } from '../models/Result_PageResponse_SubmissionVO_';
 import type { Result_SubmissionVO_ } from '../models/Result_SubmissionVO_';
 import type { SubmitCodeRequest } from '../models/SubmitCodeRequest';
 import type { CancelablePromise } from '../core/CancelablePromise';
@@ -52,33 +52,39 @@ export class SubmissionControllerService {
     /**
      * listSubmissions
      * @param contestId
+     * @param current
      * @param language
-     * @param limit
-     * @param offset
+     * @param pageSize
      * @param problemId
+     * @param sortField
+     * @param sortOrder
      * @param status
      * @param userId
-     * @returns Result_List_SubmissionVO_ OK
+     * @returns Result_PageResponse_SubmissionVO_ OK
      * @throws ApiError
      */
     public static listSubmissionsUsingGet(
         contestId?: number,
+        current?: number,
         language?: string,
-        limit?: number,
-        offset?: number,
+        pageSize?: number,
         problemId?: number,
+        sortField?: string,
+        sortOrder?: string,
         status?: string,
         userId?: number,
-    ): CancelablePromise<Result_List_SubmissionVO_> {
+    ): CancelablePromise<Result_PageResponse_SubmissionVO_> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/submission/list',
             query: {
                 'contestId': contestId,
+                'current': current,
                 'language': language,
-                'limit': limit,
-                'offset': offset,
+                'pageSize': pageSize,
                 'problemId': problemId,
+                'sortField': sortField,
+                'sortOrder': sortOrder,
                 'status': status,
                 'userId': userId,
             },

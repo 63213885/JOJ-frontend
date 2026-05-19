@@ -2,7 +2,7 @@
   <div class="problem-list-wrapper">
     <section class="page-header">
       <div class="header-content">
-        <div>
+        <div class="header-title-group">
           <h1 class="page-title">题库</h1>
           <p class="page-subtitle">探索、练习、提升你的算法能力</p>
         </div>
@@ -263,13 +263,25 @@ export default defineComponent({
 .page-header {
   max-width: 1200px;
   margin: 0 auto 30px;
-  text-align: left;
+  text-align: center;
 }
 
 .header-content {
+  position: relative;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  justify-content: center;
+  align-items: center;
+}
+
+.header-title-group {
+  text-align: center;
+}
+
+.header-actions {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .page-title {

@@ -38,7 +38,8 @@ const user = inject<Ref<UserVO | null>>("profileUser");
   font-size: 20px;
   font-weight: 600;
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  color: #f8fafc;
 }
 
 .card-body {

@@ -656,16 +656,18 @@ export default defineComponent({
       if (!userId) return;
       try {
         const res = await SubmissionControllerService.listSubmissionsUsingGet(
-          undefined,
-          undefined,
-          20,
-          0,
-          problemId,
-          undefined,
-          userId
+          undefined, // contestId
+          1, // current
+          undefined, // language
+          50, // pageSize
+          problemId, // problemId
+          "id", // sortField
+          "descend", // sortOrder
+          undefined, // status
+          userId // userId
         );
         if (res.code === 0 && res.data) {
-          submissions.value = res.data;
+          submissions.value = res.data.records || [];
         }
       } catch (e) {
         console.error("获取提交记录失败", e);

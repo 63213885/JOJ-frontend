@@ -45,6 +45,11 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import("../views/problem/ProblemDetailView.vue"),
   },
   {
+    path: "/submission/list",
+    name: "submissionList",
+    component: () => import("../views/submission/SubmissionListView.vue"),
+  },
+  {
     path: "/user-layout",
     component: () => import("../views/user/profile/ProfileView.vue"),
     children: [
@@ -60,18 +65,18 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import("../views/user/profile/ProfileHomeView.vue"),
       },
       {
-        path: "/courses/:account",
+        path: "/profile/:account/courses",
         name: "userCourses",
         component: () => import("../views/user/profile/ProfileCoursesView.vue"),
       },
       {
-        path: "/submissions/:account",
+        path: "/profile/:account/submissions",
         name: "userSubmissions",
         component: () =>
           import("../views/user/profile/ProfileSubmissionsView.vue"),
       },
       {
-        path: "/contests/with/:account",
+        path: "/profile/:account/contests",
         name: "userContests",
         component: () =>
           import("../views/user/profile/ProfileContestsView.vue"),
