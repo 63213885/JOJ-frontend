@@ -96,6 +96,41 @@ export class SubmissionControllerService {
         });
     }
     /**
+     * rejudgeListSubmissions
+     * @param contestId
+     * @param language
+     * @param problemId
+     * @param status
+     * @param userId
+     * @returns Result_boolean_ OK
+     * @returns any Created
+     * @throws ApiError
+     */
+    public static rejudgeListSubmissionsUsingPost(
+        contestId?: number,
+        language?: string,
+        problemId?: number,
+        status?: string,
+        userId?: number,
+    ): CancelablePromise<Result_boolean_ | any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/submission/list/rejudge',
+            query: {
+                'contestId': contestId,
+                'language': language,
+                'problemId': problemId,
+                'status': status,
+                'userId': userId,
+            },
+            errors: {
+                401: `Unauthorized`,
+                403: `Forbidden`,
+                404: `Not Found`,
+            },
+        });
+    }
+    /**
      * listStatus
      * @returns Result_List_string_ OK
      * @throws ApiError
@@ -151,6 +186,29 @@ export class SubmissionControllerService {
             errors: {
                 401: `Unauthorized`,
                 403: `Forbidden`,
+            },
+        });
+    }
+    /**
+     * rejudgeSubmission
+     * @param id id
+     * @returns Result_boolean_ OK
+     * @returns any Created
+     * @throws ApiError
+     */
+    public static rejudgeSubmissionUsingPost(
+        id: number,
+    ): CancelablePromise<Result_boolean_ | any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/submission/{id}/rejudge',
+            path: {
+                'id': id,
+            },
+            errors: {
+                401: `Unauthorized`,
+                403: `Forbidden`,
+                404: `Not Found`,
             },
         });
     }

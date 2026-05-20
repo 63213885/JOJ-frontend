@@ -55,6 +55,15 @@
               new Date(submission.submitTime ?? "").toLocaleString()
             }}</span>
           </div>
+          <div class="meta-item meta-item-rejudge" v-if="isAdmin">
+            <button
+              class="btn-rejudge"
+              :disabled="rejudging"
+              @click="handleRejudge"
+            >
+              {{ rejudging ? "✈ 重测中..." : "↻ 重测" }}
+            </button>
+          </div>
         </div>
 
         <!-- 第3部分：代码展示 -->
@@ -91,16 +100,35 @@
     <div v-if="showToast" :class="['toast', toastType]">
       {{ toastMessage }}
     </div>
+
+    <!-- 确认弹窗 -->
+    <div class="confirm-overlay" v-if="confirmVisible">
+      <div class="confirm-dialog" @click.stop>
+        <p class="confirm-message">{{ confirmMessage }}</p>
+        <div class="confirm-actions">
+          <button
+            class="confirm-btn confirm-btn-cancel"
+            @click="onConfirmCancel"
+          >
+            取消
+          </button>
+          <button class="confirm-btn confirm-btn-ok" @click="onConfirmOk">
+            确定
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, watch } from "vue";
+import { defineComponent, ref, watch, computed } from "vue";
 import VueMonacoEditor from "@guolao/vue-monaco-editor";
 import {
   SubmissionControllerService,
   SubmissionVO,
 } from "../../generated/problem";
+import { useStore } from "vuex";
 
 export default defineComponent({
   name: "SubmissionDetailModal",
@@ -123,6 +151,13 @@ export default defineComponent({
   },
   emits: ["update:visible"],
   setup(props, { emit }) {
+    const store = useStore();
+    const currentUser = computed(() => store.getters.currentUser);
+    const isAdmin = computed(() => {
+      const role = currentUser.value?.role;
+      return role === "admin" || role === "ADMIN";
+    });
+
     const submission = ref<SubmissionVO | null>(null);
 
     const showToast = ref(false);
@@ -169,6 +204,58 @@ export default defineComponent({
       emit("update:visible", false);
     };
 
+    const rejudging = ref(false);
+
+    // Custom confirm dialog state
+    const confirmVisible = ref(false);
+    const confirmMessage = ref("");
+    let confirmResolve: ((value: boolean) => void) | null = null;
+
+    const showConfirm = (message: string): Promise<boolean> => {
+      return new Promise((resolve) => {
+        confirmMessage.value = message;
+        confirmVisible.value = true;
+        confirmResolve = resolve;
+      });
+    };
+
+    const onConfirmOk = () => {
+      confirmVisible.value = false;
+      if (confirmResolve) confirmResolve(true);
+      confirmResolve = null;
+    };
+
+    const onConfirmCancel = () => {
+      confirmVisible.value = false;
+      if (confirmResolve) confirmResolve(false);
+      confirmResolve = null;
+    };
+
+    const handleRejudge = async () => {
+      if (!submission.value?.id) return;
+      const confirmed = await showConfirm("确定要重测该提交吗？");
+      if (!confirmed) return;
+      rejudging.value = true;
+      try {
+        const res =
+          await SubmissionControllerService.rejudgeSubmissionUsingPost(
+            submission.value.id
+          );
+        if (res.code === 0) {
+          triggerToast("重测请求已提交", "success");
+          // Reload submission data after a short delay
+          setTimeout(() => loadSubmission(), 1500);
+        } else {
+          triggerToast("重测失败: " + (res.message || "未知错误"), "error");
+        }
+      } catch (err: any) {
+        console.error("重测失败:", err);
+        triggerToast("重测请求失败", "error");
+      } finally {
+        rejudging.value = false;
+      }
+    };
+
     const copyToClipboard = async (text: string) => {
       try {
         await navigator.clipboard.writeText(text);
@@ -209,6 +296,13 @@ export default defineComponent({
       showToast,
       toastMessage,
       toastType,
+      rejudging,
+      handleRejudge,
+      isAdmin,
+      confirmVisible,
+      confirmMessage,
+      onConfirmOk,
+      onConfirmCancel,
     };
   },
 });
@@ -305,6 +399,42 @@ export default defineComponent({
   background: rgba(255, 255, 255, 0.03);
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.05);
+  align-items: flex-end;
+}
+
+.meta-item-rejudge {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  min-width: unset;
+}
+
+.btn-rejudge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.4);
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.btn-rejudge:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+}
+
+.btn-rejudge:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .meta-item {
@@ -443,6 +573,99 @@ export default defineComponent({
   }
   to {
     top: 24px;
+    opacity: 1;
+  }
+}
+
+/* Confirm dialog */
+.confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 11001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.confirm-dialog {
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 28px 32px;
+  min-width: 360px;
+  max-width: 440px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  animation: scaleIn 0.2s ease;
+}
+
+.confirm-message {
+  font-size: 1rem;
+  color: #f8fafc;
+  margin: 0 0 24px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.confirm-btn {
+  padding: 8px 24px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.confirm-btn-cancel {
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.confirm-btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #f8fafc;
+}
+
+.confirm-btn-ok {
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  color: white;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+}
+
+.confirm-btn-ok:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
     opacity: 1;
   }
 }
