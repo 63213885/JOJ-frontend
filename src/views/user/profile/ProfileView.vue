@@ -17,14 +17,19 @@
                 alt="Avatar"
                 class="avatar"
               />
+              <div v-if="avatarUploading" class="avatar-uploading-overlay">
+                <div class="avatar-spinner"></div>
+              </div>
               <input
                 type="file"
                 ref="fileInput"
                 @change="onAvatarChange"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/gif,image/webp"
                 style="display: none"
               />
-              <div v-if="isOwner" class="avatar-overlay">更换头像</div>
+              <div v-if="isOwner && !avatarUploading" class="avatar-overlay">
+                更换头像
+              </div>
             </div>
 
             <div class="user-main-info">
@@ -313,22 +318,14 @@
         </div>
       </div>
     </div>
-
-    <!-- Notification Toast -->
-    <div
-      v-if="notification.show"
-      class="notification-toast"
-      :class="`type-${notification.type}`"
-    >
-      {{ notification.message }}
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, computed, provide, reactive } from "vue";
+import { ref, onMounted, watch, computed, provide } from "vue";
 import { useRoute } from "vue-router";
 import { useStore } from "vuex";
+import { useNotification } from "@/composables/useNotification";
 import {
   ProfileControllerService,
   RelationControllerService,
@@ -360,37 +357,72 @@ const getRankColor = (rating: number) => {
 };
 
 const fileInput = ref<HTMLInputElement | null>(null);
+const avatarUploading = ref(false);
+
+const AVATAR_MAX_SIZE = 2 * 1024 * 1024; // 2MB
+const AVATAR_ALLOWED_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+];
+const AVATAR_ALLOWED_EXTENSIONS = "JPG、PNG、JPEG、WebP";
 
 const triggerAvatarUpload = () => {
+  if (avatarUploading.value) return;
   if (fileInput.value) {
+    fileInput.value.value = ""; // Reset to allow re-selecting same file
     fileInput.value.click();
   }
 };
 
-const onAvatarChange = (event: Event) => {
+const onAvatarChange = async (event: Event) => {
   const target = event.target as HTMLInputElement;
-  if (target.files && target.files.length > 0) {
-    showNotification("头像上传功能开发中", "info");
+  if (!target.files || target.files.length === 0) return;
+
+  const file = target.files[0];
+
+  // Validate file type
+  if (!AVATAR_ALLOWED_TYPES.includes(file.type)) {
+    showNotification(`仅支持 ${AVATAR_ALLOWED_EXTENSIONS} 格式的图片`, "error");
+    return;
+  }
+
+  // Validate file size
+  if (file.size > AVATAR_MAX_SIZE) {
+    const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+    showNotification(`图片大小 ${sizeMB}MB 超过限制（最大 2MB）`, "error");
+    return;
+  }
+
+  avatarUploading.value = true;
+  try {
+    const res = await ProfileControllerService.uploadAvatarUsingPut(file);
+    if (res.code === 0) {
+      showNotification("头像更新成功", "success");
+      // Refresh profile to get new avatar URL
+      await fetchUserProfile(routeAccount.value);
+      // Also update the store's user avatar if it's the owner
+      if (store.state.user && res.data) {
+        store.commit("updateUser", { avatarUrl: res.data });
+      }
+    } else {
+      showNotification(
+        "头像上传失败：" + ((res as any).msg || "未知错误"),
+        "error"
+      );
+    }
+  } catch (err: any) {
+    showNotification(
+      "头像上传异常：" + (err.body?.msg || err.message || "网络错误"),
+      "error"
+    );
+  } finally {
+    avatarUploading.value = false;
   }
 };
 
-const notification = reactive({
-  show: false,
-  message: "",
-  type: "error", // 'error' or 'success' or 'info'
-});
-
-const showNotification = (
-  msg: string,
-  type: "error" | "success" | "info" = "error"
-) => {
-  notification.message = msg;
-  notification.type = type;
-  notification.show = true;
-  setTimeout(() => {
-    notification.show = false;
-  }, 3000);
-};
+const { show: showNotification } = useNotification();
 
 const routeAccount = computed(() => {
   // If it's settings page and no account parameter, we fallback to logged in user
@@ -913,6 +945,32 @@ watch(
   opacity: 1;
 }
 
+.avatar-uploading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  border-radius: 50%;
+}
+
+.avatar-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: avatarSpin 0.8s linear infinite;
+}
+
+@keyframes avatarSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .user-main-info {
   display: flex;
   flex-direction: column;
@@ -1215,32 +1273,5 @@ watch(
 .relation-pagination button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-/* Notification Toast */
-.notification-toast {
-  position: fixed;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: white;
-  z-index: 10000;
-  animation: slideDownToast 0.3s ease;
-  white-space: nowrap;
-}
-
-@keyframes slideDownToast {
-  from {
-    transform: translate(-50%, -20px);
-    opacity: 0;
-  }
-  to {
-    transform: translate(-50%, 0);
-    opacity: 1;
-  }
 }
 </style>

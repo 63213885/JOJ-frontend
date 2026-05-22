@@ -39,44 +39,20 @@
         </div>
       </div>
     </div>
-
-    <!-- Notification Toast -->
-    <div
-      v-if="notification.show"
-      class="notification-toast"
-      :class="`type-${notification.type}`"
-    >
-      {{ notification.message }}
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { inject, reactive, Ref } from "vue";
+import { inject, Ref } from "vue";
 import { UserDetailVO } from "../../../../generated/user";
+import { useNotification } from "@/composables/useNotification";
 
 const privateInfo = inject<Ref<UserDetailVO | null>>("privateInfo");
 
-const notification = reactive({
-  show: false,
-  message: "",
-  type: "info",
-});
-
-const showNotification = (
-  msg: string,
-  type: "error" | "success" | "info" = "info"
-) => {
-  notification.message = msg;
-  notification.type = type;
-  notification.show = true;
-  setTimeout(() => {
-    notification.show = false;
-  }, 3000);
-};
+const { info: showInfo } = useNotification();
 
 const handleAction = (type: string) => {
-  showNotification(`预留功能开发中: ${type}`, "info");
+  showInfo(`预留功能开发中: ${type}`);
 };
 </script>
 
@@ -181,47 +157,5 @@ const handleAction = (type: string) => {
 .error-msg {
   color: #94a3b8;
   margin-top: 20px;
-}
-
-/* Notification Toast */
-.notification-toast {
-  position: fixed;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: white;
-  z-index: 10000;
-  animation: slideDownToast 0.3s ease;
-  white-space: nowrap;
-}
-
-.notification-toast.type-success {
-  background: rgba(34, 197, 94, 0.9);
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
-}
-
-.notification-toast.type-error {
-  background: rgba(239, 68, 68, 0.9);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-}
-
-.notification-toast.type-info {
-  background: rgba(59, 130, 246, 0.9);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-}
-
-@keyframes slideDownToast {
-  from {
-    transform: translate(-50%, -20px);
-    opacity: 0;
-  }
-  to {
-    transform: translate(-50%, 0);
-    opacity: 1;
-  }
 }
 </style>

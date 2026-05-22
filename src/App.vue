@@ -1,6 +1,7 @@
 <template>
   <div class="app-layout">
     <TopNavBar />
+    <GlobalNotification />
 
     <main class="main-content">
       <router-view />
@@ -12,12 +13,14 @@
 import { defineComponent, onMounted } from "vue";
 import { useStore } from "vuex";
 import TopNavBar from "@/components/TopNavBar.vue";
+import GlobalNotification from "@/components/GlobalNotification.vue";
 import { AuthControllerService } from "../generated/user";
 
 export default defineComponent({
   name: "App",
   components: {
     TopNavBar,
+    GlobalNotification,
   },
   setup() {
     const store = useStore();

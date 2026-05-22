@@ -23,6 +23,11 @@ export default createStore<State>({
       state.user = user;
       state.isLoggedIn = true;
     },
+    updateUser(state, updates: Partial<LoginUserVO>) {
+      if (state.user) {
+        state.user = { ...state.user, ...updates };
+      }
+    },
     clearUser(state) {
       state.user = null;
       state.isLoggedIn = false;
