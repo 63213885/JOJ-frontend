@@ -10,11 +10,9 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted } from "vue";
-import { useStore } from "vuex";
+import { defineComponent } from "vue";
 import TopNavBar from "@/components/TopNavBar.vue";
 import GlobalNotification from "@/components/GlobalNotification.vue";
-import { AuthControllerService } from "../generated/user";
 
 export default defineComponent({
   name: "App",
@@ -23,20 +21,7 @@ export default defineComponent({
     GlobalNotification,
   },
   setup() {
-    const store = useStore();
-
-    onMounted(async () => {
-      try {
-        const res = await AuthControllerService.getLoginUserUsingGet();
-        if (res.code === 0 && res.data) {
-          store.commit("setUser", res.data);
-        }
-      } catch (error) {
-        console.log("未登录或获取用户信息失败", error);
-      } finally {
-        store.commit("setInitialized");
-      }
-    });
+    // You can keep this empty or just remove onMounted entirely
   },
 });
 </script>

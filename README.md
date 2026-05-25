@@ -23,4 +23,10 @@ openapi --input ./swagger.json --output ./generated/user --client axios
 
 curl http://localhost:8083/api/v2/api-docs -o swagger.json
 openapi --input ./swagger.json --output ./generated/problem --client axios
+
+curl http://localhost:8085/api/v2/api-docs -o swagger.json
+openapi --input ./swagger.json --output ./generated/media --client axios
+
+curl http://localhost:8086/api/v2/api-docs -o swagger.json
+openapi --input ./swagger.json --output ./generated/course --client axios
 ```

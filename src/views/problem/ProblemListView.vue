@@ -457,9 +457,11 @@ export default defineComponent({
   flex-wrap: wrap;
 }
 
-.col-action {
-  width: 80px;
-  text-align: right;
+th.col-action,
+td.col-action {
+  width: 100px;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .btn-modify {

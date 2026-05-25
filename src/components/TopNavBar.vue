@@ -10,7 +10,7 @@
         <router-link to="/problem/list">题库</router-link>
         <router-link to="/submission/list">提交</router-link>
         <router-link to="/contests">竞赛</router-link>
-        <router-link to="/courses">课程</router-link>
+        <router-link to="/course/list">课程</router-link>
         <router-link to="/user/list">用户</router-link>
       </nav>
 

@@ -95,6 +95,58 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requireAdmin: true },
   },
   {
+    path: "/course/list",
+    name: "courseList",
+    component: () => import("../views/course/CourseListView.vue"),
+  },
+  {
+    path: "/course/create",
+    name: "courseCreate",
+    component: () => import("../views/course/CourseCreateView.vue"),
+    meta: { requireAdmin: true },
+  },
+  {
+    path: "/course/edit/:id",
+    name: "courseEdit",
+    component: () => import("../views/course/CourseEditView.vue"),
+    meta: { requireAdmin: true },
+  },
+  {
+    path: "/course/:id",
+    name: "courseDetail",
+    component: () => import("../views/course/CourseDetailView.vue"),
+  },
+  {
+    path: "/course/:courseId/lesson/create",
+    name: "courseLessonCreate",
+    component: () =>
+      import("../views/course/lesson/CourseLessonCreateView.vue"),
+    meta: { requireAdmin: true },
+  },
+  {
+    path: "/course/:courseId/lesson/edit/:lessonId",
+    name: "courseLessonEdit",
+    component: () => import("../views/course/lesson/CourseLessonEditView.vue"),
+    meta: { requireAdmin: true },
+  },
+  {
+    path: "/course/:courseId/lesson/:lessonId",
+    component: () => import("../views/course/lesson/LessonWorkspaceView.vue"),
+    children: [
+      {
+        path: "theory",
+        name: "lessonTheory",
+        component: () => import("../views/course/lesson/LessonTheoryView.vue"),
+      },
+      {
+        path: "practice",
+        name: "lessonPractice",
+        component: () =>
+          import("../views/course/lesson/LessonPracticeView.vue"),
+      },
+    ],
+  },
+  {
     path: "/no-auth",
     name: "noAuth",
     component: () => import("../views/error/NoAuthView.vue"),
@@ -111,7 +163,11 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
+  if (store.getters.isInitializing) {
+    await store.dispatch("fetchCurrentUser");
+  }
+
   if (to.meta.requireAdmin) {
     const user = store.getters.currentUser;
     if (user && (user.role === "admin" || user.role === "ADMIN")) {

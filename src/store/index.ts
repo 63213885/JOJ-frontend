@@ -1,5 +1,5 @@
 import { createStore } from "vuex";
-import { LoginUserVO } from "../../generated/user";
+import { AuthControllerService, LoginUserVO } from "../../generated/user";
 
 interface State {
   user: LoginUserVO | null;
@@ -36,6 +36,20 @@ export default createStore<State>({
       state.isInitializing = false;
     },
   },
-  actions: {},
+  actions: {
+    async fetchCurrentUser({ commit, state }) {
+      if (!state.isInitializing) return;
+      try {
+        const res = await AuthControllerService.getLoginUserUsingGet();
+        if (res.code === 0 && res.data) {
+          commit("setUser", res.data);
+        }
+      } catch (error) {
+        console.log("未登录或获取用户信息失败", error);
+      } finally {
+        commit("setInitialized");
+      }
+    },
+  },
   modules: {},
 });
