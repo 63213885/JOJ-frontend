@@ -57,4 +57,23 @@ body {
   display: flex;
   flex-direction: column;
 }
+
+html.theme-light {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* 恢复原本不应反转的元素 */
+html.theme-light img,
+html.theme-light video,
+html.theme-light canvas,
+html.theme-light iframe,
+html.theme-light .avatar {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+html.theme-light .monaco-editor,
+html.theme-light .bytemd {
+  /* 如果有自己的主题可以尝试在这里反转回来或者单独配置 */
+  filter: invert(1) hue-rotate(180deg);
+}
 </style>

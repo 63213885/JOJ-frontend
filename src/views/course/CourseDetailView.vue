@@ -41,6 +41,11 @@
             <div class="lesson-info">
               <span class="lesson-index">章节 {{ index + 1 }}</span>
               <span class="lesson-title">{{ lesson.title }}</span>
+              <span
+                v-if="isAdmin && lesson.status === 0"
+                class="lesson-hidden-tag"
+                >已隐藏</span
+              >
             </div>
             <div class="lesson-actions">
               <button
@@ -359,9 +364,21 @@ export default defineComponent({
   .course-header {
     flex-direction: column;
   }
+
   .cover-wrapper {
     width: 100%;
     height: 200px;
   }
+}
+
+.lesson-hidden-tag {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-left: 10px;
 }
 </style>

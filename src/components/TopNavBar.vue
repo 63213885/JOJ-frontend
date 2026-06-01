@@ -25,6 +25,144 @@
       </div>
 
       <div class="user-menu" v-else>
+        <!-- Theme Toggle Icon -->
+        <div class="dropdown" v-click-outside="closeThemeDropdown">
+          <div class="icon-btn" title="主题" @click="toggleThemeDropdown">
+            <svg
+              v-if="currentTheme === 'dark'"
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+            <svg
+              v-else-if="currentTheme === 'light'"
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <svg
+              v-else
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+          </div>
+          <transition name="slide-fade">
+            <div
+              v-show="themeDropdownOpen"
+              class="dropdown-menu theme-menu"
+              @click="closeThemeDropdown"
+            >
+              <div
+                class="dropdown-item"
+                :class="{ active: themeSetting === 'light' }"
+                @click="setTheme('light')"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="12" cy="12" r="5"></circle>
+                  <line x1="12" y1="1" x2="12" y2="3"></line>
+                  <line x1="12" y1="21" x2="12" y2="23"></line>
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                  <line x1="1" y1="12" x2="3" y2="12"></line>
+                  <line x1="21" y1="12" x2="23" y2="12"></line>
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+                亮色
+              </div>
+              <div
+                class="dropdown-item"
+                :class="{ active: themeSetting === 'dark' }"
+                @click="setTheme('dark')"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
+                  ></path>
+                </svg>
+                暗色
+              </div>
+              <div
+                class="dropdown-item"
+                :class="{ active: themeSetting === 'system' }"
+                @click="setTheme('system')"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+                跟随系统
+              </div>
+            </div>
+          </transition>
+        </div>
+
         <!-- Messages Icon -->
         <div class="icon-btn" title="私信">
           <svg
@@ -161,6 +299,7 @@ import { defineComponent, ref, computed } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { AuthControllerService } from "../../generated/user";
+import { themeSetting, currentTheme, applyTheme } from "../utils/theme";
 
 // 简单的 click-outside 指令，用于点击外部关闭下拉菜单
 const clickOutside = {
@@ -188,6 +327,7 @@ export default defineComponent({
     const store = useStore();
     const router = useRouter();
     const dropdownOpen = ref(false);
+    const themeDropdownOpen = ref(false);
     const defaultAvatar =
       "https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png"; // Element Plus 默认头像
 
@@ -215,15 +355,34 @@ export default defineComponent({
       }
     };
 
+    const toggleThemeDropdown = () => {
+      themeDropdownOpen.value = !themeDropdownOpen.value;
+    };
+
+    const closeThemeDropdown = () => {
+      themeDropdownOpen.value = false;
+    };
+
+    const setTheme = (setting: string) => {
+      applyTheme(setting);
+      closeThemeDropdown();
+    };
+
     return {
       isLoggedIn,
       currentUser,
       dropdownOpen,
+      themeDropdownOpen,
       isInitializing,
       defaultAvatar,
+      themeSetting,
+      currentTheme,
       toggleDropdown,
       closeDropdown,
       handleLogout,
+      toggleThemeDropdown,
+      closeThemeDropdown,
+      setTheme,
     };
   },
 });
@@ -445,6 +604,15 @@ export default defineComponent({
 .dropdown-item:hover {
   background: rgba(255, 255, 255, 0.05);
   color: #f8fafc;
+}
+
+.dropdown-item.active {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.theme-menu {
+  width: 140px;
 }
 
 .dropdown-item.logout {

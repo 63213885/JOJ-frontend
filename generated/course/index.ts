@@ -20,8 +20,9 @@ export type { Result_List_CourseLessonVO_ } from './models/Result_List_CourseLes
 export type { Result_List_CourseVO_ } from './models/Result_List_CourseVO_';
 export type { Result_long_ } from './models/Result_long_';
 export type { Result_string_ } from './models/Result_string_';
-export type { Result_VideoPlayUrlVO_ } from './models/Result_VideoPlayUrlVO_';
-export type { VideoPlayUrlVO } from './models/VideoPlayUrlVO';
+export type { Result_VideoPlayInfoVO_ } from './models/Result_VideoPlayInfoVO_';
+export type { VideoPlayInfoVO } from './models/VideoPlayInfoVO';
 
 export { CourseControllerService } from './services/CourseControllerService';
 export { CourseLessonControllerService } from './services/CourseLessonControllerService';
+export { CourseLessonVideoControllerService } from './services/CourseLessonVideoControllerService';

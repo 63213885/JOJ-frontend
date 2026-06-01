@@ -2,10 +2,10 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { VideoPlayUrlVO } from './VideoPlayUrlVO';
-export type Result_VideoPlayUrlVO_ = {
+import type { VideoPlayInfoVO } from './VideoPlayInfoVO';
+export type Result_VideoPlayInfoVO_ = {
     code?: number;
-    data?: VideoPlayUrlVO;
+    data?: VideoPlayInfoVO;
     msg?: string;
 };
 

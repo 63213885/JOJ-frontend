@@ -189,6 +189,23 @@
           </div>
         </div>
 
+        <div class="form-group">
+          <label>章节可见性</label>
+          <div class="toggle-switch-wrapper">
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                :checked="formData.status === 1"
+                @change="(e) => formData.status = (e.target as HTMLInputElement).checked ? 1 : 0"
+              />
+              <span class="slider"></span>
+            </label>
+            <span class="toggle-label">{{
+              formData.status === 1 ? "显示" : "隐藏"
+            }}</span>
+          </div>
+        </div>
+
         <button
           type="submit"
           class="btn-submit"
@@ -790,5 +807,67 @@ label {
   .form-container {
     padding: 20px;
   }
+}
+
+/* Toggle Switch */
+.toggle-switch-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 26px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: 0.4s;
+  border-radius: 26px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: #94a3b8;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+input:checked + .slider:before {
+  transform: translateX(24px);
+  background-color: white;
+}
+
+.toggle-label {
+  color: #f8fafc;
+  font-size: 0.95rem;
+  font-weight: 500;
 }
 </style>

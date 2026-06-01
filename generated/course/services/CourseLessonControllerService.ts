@@ -8,7 +8,6 @@ import type { Result_boolean_ } from '../models/Result_boolean_';
 import type { Result_CourseLessonVO_ } from '../models/Result_CourseLessonVO_';
 import type { Result_List_CourseLessonVO_ } from '../models/Result_List_CourseLessonVO_';
 import type { Result_long_ } from '../models/Result_long_';
-import type { Result_VideoPlayUrlVO_ } from '../models/Result_VideoPlayUrlVO_';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -117,28 +116,6 @@ export class CourseLessonControllerService {
             errors: {
                 401: `Unauthorized`,
                 403: `Forbidden`,
-            },
-        });
-    }
-    /**
-     * getVideoPlayUrl
-     * @param lessonId lessonId
-     * @returns Result_VideoPlayUrlVO_ OK
-     * @throws ApiError
-     */
-    public static getVideoPlayUrlUsingGet(
-        lessonId: number,
-    ): CancelablePromise<Result_VideoPlayUrlVO_> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/course/lesson/{lessonId}/video/play-url',
-            path: {
-                'lessonId': lessonId,
-            },
-            errors: {
-                401: `Unauthorized`,
-                403: `Forbidden`,
-                404: `Not Found`,
             },
         });
     }

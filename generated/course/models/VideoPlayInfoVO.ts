@@ -2,8 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type VideoPlayUrlVO = {
-    expireSeconds?: number;
-    playUrl?: string;
+export type VideoPlayInfoVO = {
+    playType?: string;
+    url?: string;
 };
 

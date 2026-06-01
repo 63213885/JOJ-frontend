@@ -19,12 +19,8 @@ module.exports = defineConfig({
     ],
   },
   devServer: {
+    host: "0.0.0.0",
     port: 6310,
-    proxy: {
-      "/api": {
-        target: "http://localhost:8081",
-        changeOrigin: true,
-      },
-    },
+    allowedHosts: ["joj.ac.cn"],
   },
 });
